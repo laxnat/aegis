@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, ChevronLeft, House, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { LogoutButton } from '../documents/logout-button'
+import { ChevronDown, ChevronLeft, PanelLeftOpen, FileText, House, LogOut } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 type Document = {
   id: string
@@ -19,6 +20,7 @@ type SidebarProps = {
 
 export function Sidebar({ documents, userEmail }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [collapseY, setCollapseY] = useState(24)
@@ -35,23 +37,23 @@ export function Sidebar({ documents, userEmail }: SidebarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const recentDocuments = documents.slice(0, 10)
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   if (isCollapsed) {
     return (
-      <div className="w-16 bg-tertiary flex flex-col items-center py-4 gap-4">
+      <div className="w-14 bg-tertiary border-r border-white/5 flex flex-col items-center py-4 gap-3">
         <button
           onClick={() => setIsCollapsed(false)}
-          className="p-2 hover:bg-gray-200 rounded"
+          className="p-2 text-white/40 hover:text-white transition-colors"
           title="Expand sidebar"
         >
           <PanelLeftOpen size={16} />
         </button>
-        <Link
-          href="/documents"
-          className="p-2 hover:bg-gray-200 rounded"
-          title="All documents"
-        >
+        <Link href="/documents" className="p-2 text-white/40 hover:text-white transition-colors" title="Home">
           <House size={16} />
         </Link>
       </div>
@@ -65,99 +67,98 @@ export function Sidebar({ documents, userEmail }: SidebarProps) {
         const rect = sidebarRef.current?.getBoundingClientRect()
         if (rect) setCollapseY(e.clientY - rect.top)
       }}
-      className="w-64 bg-tertiary border-r border-gray flex flex-col h-screen relative group/sidebar"
+      className="w-56 bg-tertiary border-r border-white/5 flex flex-col h-screen relative group/sidebar"
     >
-      {/* Header */}
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="font-display text-6xl">aegis</h2>
-
-          {/* Avatar + dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setShowDropdown((v) => !v)}
-              className="flex items-center gap-1"
-              title={userEmail}
-            >
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-display text-2xl">
-                {userEmail[0].toUpperCase()}
-              </div>
-              <ChevronDown size={14} className={`transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-primary border rounded-lg shadow-lg z-50 py-1">
-                <p className="px-3 py-2 text-md text-white truncate border-b">{userEmail}</p>
-                <Link
-                  href="/profile"
-                  className="block px-3 py-2 text-sm hover:bg-gray-100 transition-colors"
-                  onClick={() => setShowDropdown(false)}
-                >
-                  Profile Settings
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-
-      </div>
-
-      {/* Collapse button on border */}
+      {/* Collapse button */}
       <button
         onClick={() => setIsCollapsed(true)}
-        style={{ top: collapseY - 12 }}
-        className="absolute -right-3 z-10 w-6 h-6 bg-tertiary hover:bg-primary border rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover/sidebar:opacity-100 transition-opacity"
+        style={{ top: collapseY - 10 }}
+        className="absolute -right-3 z-10 w-6 h-6 bg-tertiary border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-white opacity-0 group-hover/sidebar:opacity-100 transition-all"
         title="Collapse sidebar"
       >
-        <ChevronLeft size={20} />
+        <ChevronLeft size={14} />
       </button>
 
-      {/* Home */}
-      <div className="px-3 py-1">
+      {/* Header */}
+      <div className="px-4 pt-5 pb-4 border-b border-white/5 flex items-center justify-between">
+        <Link href="/" className="font-display text-4xl text-white hover:text-primary transition-colors">
+          aegis
+        </Link>
+
+        {/* User avatar + dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setShowDropdown((v) => !v)}
+            className="flex items-center gap-1.5"
+            title={userEmail}
+          >
+            <div className="w-7 h-7 bg-primary/20 border border-primary/40 rounded-full flex items-center justify-center text-primary font-display text-sm">
+              {userEmail[0].toUpperCase()}
+            </div>
+            <ChevronDown size={12} className={`text-white/30 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+          </button>
+
+          {showDropdown && (
+            <div className="absolute top-full right-0 mt-2 w-52 bg-secondary border border-white/10 shadow-xl z-50 py-1">
+              <p className="px-3 py-2 font-ui text-xs text-white/40 truncate border-b border-white/5">
+                {userEmail}
+              </p>
+              <button
+                onClick={() => { handleLogout(); setShowDropdown(false) }}
+                className="w-full flex items-center gap-2 px-3 py-2 font-ui text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors text-left"
+              >
+                <LogOut size={13} />
+                Log out
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Nav */}
+      <div className="px-2 py-3">
         <Link
           href="/documents"
-          className={`flex items-center gap-3 px-3 rounded font-display text-4xl transition-colors hover:line-through hover:decoration-primary hover:decoration-8  ${
-            pathname === '/documents' ? 'bg-primary italic' : ''
+          className={`flex items-center gap-2.5 px-3 py-2 font-ui text-base rounded transition-colors ${
+            pathname === '/documents'
+              ? 'text-white bg-white/8'
+              : 'text-white/50 hover:text-white hover:bg-white/5'
           }`}
         >
+          <House size={16} />
           Home
         </Link>
       </div>
 
-      {/* Recent Pages */}
-      <div className="flex-1 overflow-y-auto p-2">
-        <div className="px-2 py-2 flex items-center justify-between">
-          <h3 className="text-6xl font-display text-primary">
-            Recents
-          </h3>
-          <span className="text-6xl font-display text-highlight">{recentDocuments.length}</span>
-        </div>
-        <div className="space-y-1">
-          {recentDocuments.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-gray-500">No documents yet</p>
+      {/* Recents */}
+      <div className="flex-1 overflow-y-auto px-2 pb-4">
+        <p className="px-3 py-2 font-ui text-xs text-white/25 tracking-widest uppercase">
+          Recents
+        </p>
+        <div className="space-y-0.5">
+          {documents.length === 0 ? (
+            <p className="px-3 py-2 font-ui text-xs text-white/25">No documents yet</p>
           ) : (
-            recentDocuments.map((doc) => {
+            documents.map((doc) => {
               const isActive = pathname === `/documents/${doc.id}`
               return (
                 <Link
                   key={doc.id}
                   href={`/documents/${doc.id}`}
-                  className={`block px-3 py-2 rounded text-4xl font-display truncate  hover:line-through hover:decoration-primary hover:decoration-8 transition-colors ${
-                    isActive ? 'bg-primary italic' : ''
-                  }`}
                   title={doc.title}
+                  className={`flex items-center gap-2.5 px-3 py-2 font-ui text-base rounded transition-colors ${
+                    isActive
+                      ? 'text-white bg-white/8'
+                      : 'text-white/50 hover:text-white hover:bg-white/5'
+                  }`}
                 >
-                  {doc.title}
+                  <FileText size={15} className="shrink-0" />
+                  <span className="truncate">{doc.title}</span>
                 </Link>
               )
             })
           )}
         </div>
-      </div>
-
-      {/* Logout Section */}
-      <div className="p-4">
-        <LogoutButton />
       </div>
     </div>
   )

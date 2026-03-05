@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Plus } from 'lucide-react'
 
 export function CreateDocumentButton() {
   const router = useRouter()
@@ -9,7 +10,7 @@ export function CreateDocumentButton() {
 
   const handleCreate = async () => {
     setLoading(true)
-    
+
     const response = await fetch('/api/documents', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -17,7 +18,6 @@ export function CreateDocumentButton() {
     })
 
     const document = await response.json()
-    
     setLoading(false)
     router.push(`/documents/${document.id}`)
   }
@@ -26,9 +26,10 @@ export function CreateDocumentButton() {
     <button
       onClick={handleCreate}
       disabled={loading}
-      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+      className="flex items-center gap-2 font-display text-xl text-secondary bg-highlight px-5 py-2 tracking-widest hover:bg-primary hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      {loading ? 'Creating...' : '+ New Document'}
+      <Plus size={16} strokeWidth={3} />
+      {loading ? 'CREATING...' : 'NEW'}
     </button>
   )
 }

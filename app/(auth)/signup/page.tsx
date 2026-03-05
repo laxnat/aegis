@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
+
+const EASE = [0.22, 1, 0.36, 1] as const
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('')
@@ -18,10 +21,7 @@ export default function SignUpPage() {
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
+    const { error } = await supabase.auth.signUp({ email, password })
 
     if (error) {
       setError(error.message)
@@ -32,19 +32,75 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md space-y-8 p-8">
-        <h2 className="text-3xl font-bold text-center">Sign Up</h2>
-        
-        <form onSubmit={handleSignUp} className="space-y-6">
+    <div className="relative min-h-screen bg-secondary overflow-hidden flex items-center justify-center">
+
+      {/* Diagonal slashes */}
+      {[
+        { top: '8%',  left: '-5%',  w: '40%', h: '3px', bg: 'bg-primary',   delay: 0 },
+        { top: '12%', left: '-5%',  w: '28%', h: '8px', bg: 'bg-highlight', delay: 1 },
+        { top: '17%', left: '-5%',  w: '18%', h: '3px', bg: 'bg-primary',   delay: 2 },
+        { top: '82%', right: '-5%', w: '40%', h: '3px', bg: 'bg-accent',    delay: 3 },
+        { top: '87%', right: '-5%', w: '28%', h: '8px', bg: 'bg-highlight', delay: 4 },
+        { top: '91%', right: '-5%', w: '18%', h: '3px', bg: 'bg-primary',   delay: 5 },
+      ].map((s, i) => (
+        <motion.div
+          key={i}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.4, delay: s.delay * 0.08, ease: EASE }}
+          style={{
+            position: 'absolute',
+            top: s.top,
+            left: s.left,
+            right: s.right,
+            width: s.w,
+            height: s.h,
+            transform: 'rotate(-6deg)',
+            transformOrigin: s.left ? 'left center' : 'right center',
+          }}
+          className={s.bg}
+        />
+      ))}
+
+      {/* Corner accents */}
+      <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, duration: 0.3, ease: EASE }} className="absolute top-6 left-6 w-4 h-4 bg-highlight" />
+      <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15, duration: 0.3, ease: EASE }} className="absolute bottom-6 right-6 w-4 h-4 bg-primary" />
+      <motion.div initial={{ opacity: 0, scaleY: 0 }} animate={{ opacity: 1, scaleY: 1 }} transition={{ delay: 0.2, duration: 0.6, ease: EASE }} className="absolute top-0 left-16 w-0.5 h-32 bg-primary origin-top" />
+      <motion.div initial={{ opacity: 0, scaleY: 0 }} animate={{ opacity: 1, scaleY: 1 }} transition={{ delay: 0.25, duration: 0.6, ease: EASE }} className="absolute bottom-0 right-16 w-0.5 h-32 bg-highlight origin-bottom" />
+
+      {/* Form card */}
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.55, ease: EASE }}
+        className="relative z-10 w-full max-w-sm bg-tertiary border border-primary/20 px-10 py-10"
+      >
+        {/* Logo */}
+        <Link href="/" className="block font-display text-5xl text-white text-center mb-2">
+          aegis
+        </Link>
+
+        {/* Underline */}
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ delay: 0.5, duration: 0.4, ease: EASE }}
+          className="h-1.5 w-16 bg-highlight origin-left mx-auto mb-8"
+        />
+
+        <h1 className="font-display text-4xl text-white tracking-widest text-center mb-8">
+          SIGN UP
+        </h1>
+
+        <form onSubmit={handleSignUp} className="space-y-5">
           {error && (
-            <div className="bg-red-50 text-red-600 p-3 rounded">
+            <div className="border border-red-500/50 bg-red-500/10 text-red-400 px-4 py-3 font-ui text-sm tracking-wide">
               {error}
             </div>
           )}
-          
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">
+
+          <div className="space-y-1">
+            <label htmlFor="email" className="font-ui text-xs text-primary tracking-[0.2em] uppercase">
               Email
             </label>
             <input
@@ -53,12 +109,12 @@ export default function SignUpPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
+              className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors"
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">
+          <div className="space-y-1">
+            <label htmlFor="password" className="font-ui text-xs text-primary tracking-[0.2em] uppercase">
               Password
             </label>
             <input
@@ -67,26 +123,34 @@ export default function SignUpPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2"
+              className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+            className="relative w-full font-display text-xl text-secondary bg-highlight py-3 tracking-widest overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
-            {loading ? 'Loading...' : 'Sign Up'}
+            <span className="relative z-10">{loading ? 'LOADING...' : 'SIGN UP'}</span>
+            {!loading && (
+              <>
+                <span className="absolute inset-0 bg-primary translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
+                <span className="absolute inset-0 flex items-center justify-center font-display text-xl text-white translate-x-full group-hover:translate-x-0 transition-transform duration-300 z-20 tracking-widest">
+                  SIGN UP
+                </span>
+              </>
+            )}
           </button>
         </form>
 
-        <p className="text-center text-sm">
+        <p className="mt-6 text-center font-ui text-sm text-accent/60">
           Already have an account?{' '}
-          <Link href="/login" className="text-blue-600 hover:underline">
+          <Link href="/login" className="text-primary hover:text-highlight transition-colors">
             Log in
           </Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   )
 }
