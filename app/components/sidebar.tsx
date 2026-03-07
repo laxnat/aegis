@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, ChevronLeft, PanelLeftOpen, FileText, House, LogOut } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, FileText, House, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -23,7 +23,6 @@ export function Sidebar({ documents, userEmail }: SidebarProps) {
   const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
-  const [collapseY, setCollapseY] = useState(24)
   const sidebarRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -45,13 +44,13 @@ export function Sidebar({ documents, userEmail }: SidebarProps) {
 
   if (isCollapsed) {
     return (
-      <div className="w-14 bg-tertiary border-r border-white/5 flex flex-col items-center py-4 gap-3">
+      <div className="w-14 bg-tertiary border-r border-white/5 flex flex-col items-center h-screen relative group/collapsed">
         <button
           onClick={() => setIsCollapsed(false)}
-          className="p-2 text-white/40 hover:text-white transition-colors"
+          className="absolute top-1/2 -translate-y-1/2 -right-3 z-10 w-6 h-6 bg-tertiary border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-white opacity-0 group-hover/collapsed:opacity-100 transition-all"
           title="Expand sidebar"
         >
-          <PanelLeftOpen size={16} />
+          <ChevronRight size={14} />
         </button>
         <Link href="/documents" className="p-2 text-white/40 hover:text-white transition-colors" title="Home">
           <House size={16} />
@@ -62,18 +61,12 @@ export function Sidebar({ documents, userEmail }: SidebarProps) {
 
   return (
     <div
-      ref={sidebarRef}
-      onMouseMove={(e) => {
-        const rect = sidebarRef.current?.getBoundingClientRect()
-        if (rect) setCollapseY(e.clientY - rect.top)
-      }}
       className="w-56 bg-tertiary border-r border-white/5 flex flex-col h-screen relative group/sidebar"
     >
       {/* Collapse button */}
       <button
         onClick={() => setIsCollapsed(true)}
-        style={{ top: collapseY - 10 }}
-        className="absolute -right-3 z-10 w-6 h-6 bg-tertiary border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-white opacity-0 group-hover/sidebar:opacity-100 transition-all"
+        className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 bg-tertiary border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-white opacity-0 group-hover/sidebar:opacity-100 transition-all"
         title="Collapse sidebar"
       >
         <ChevronLeft size={14} />
