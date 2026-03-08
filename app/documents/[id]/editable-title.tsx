@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 type EditableTitleProps = {
   initialTitle: string
@@ -10,15 +11,18 @@ type EditableTitleProps = {
 export function EditableTitle({ initialTitle, documentId }: EditableTitleProps) {
   const [title, setTitle] = useState(initialTitle)
   const [isEditing, setIsEditing] = useState(false)
+  const router = useRouter()
 
   const handleSave = async () => {
     setIsEditing(false)
-    
+
     await fetch(`/api/documents/${documentId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title }),
     })
+
+    router.refresh()
   }
 
   if (isEditing) {
