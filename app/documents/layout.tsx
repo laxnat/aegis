@@ -18,20 +18,24 @@ export default async function DocumentsLayout({
     redirect('/login')
   }
 
-  const documents = await prisma.document.findMany({
-    where: {
-      userId: user.id,
-    },
-    orderBy: {
-      updatedAt: 'desc',
-    },
-    take: 10, // Only get 10 most recent
-  })
+  const [documents, folders] = await Promise.all([
+    prisma.document.findMany({
+      where: { userId: user.id },
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true, title: true, folderId: true, updatedAt: true },
+    }),
+    prisma.folder.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, name: true, parentId: true },
+    }),
+  ])
 
   return (
     <div className="flex h-screen">
       <Sidebar
         documents={documents}
+        folders={folders}
         userEmail={user.email || ''}
       />
       <main className="flex-1 overflow-auto">
