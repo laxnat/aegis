@@ -10,15 +10,33 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model Folder {
+  id        String     @id @default(cuid())
+  name      String     @default("New Folder")
+  userId    String
+  parentId  String?
+  parent    Folder?    @relation("FolderChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[]   @relation("FolderChildren")
+  documents Document[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([parentId])
+}
+
 model Document {
   id        String   @id @default(cuid())
   title     String   @default("Untitled")
-  userId    String   // Add this line
+  userId    String
+  folderId  String?
+  folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
   blocks    Block[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  @@index([userId]) // Add this for faster queries
+
+  @@index([userId])
+  @@index([folderId])
 }
 
 model Block {
