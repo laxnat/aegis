@@ -16,7 +16,7 @@ export async function PATCH(
   }
 
   const { documentId: id } = await params
-  const { title } = await request.json()
+  const body = await request.json()
 
   // Check if document belongs to user
   const document = await prisma.document.findUnique({
@@ -27,9 +27,13 @@ export async function PATCH(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
+  const data: { title?: string; folderId?: string | null } = {}
+  if (body.title !== undefined) data.title = body.title
+  if ('folderId' in body) data.folderId = body.folderId
+
   const updated = await prisma.document.update({
     where: { id },
-    data: { title },
+    data,
   })
 
   return NextResponse.json(updated)
