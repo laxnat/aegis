@@ -72,7 +72,6 @@ export function BlockEditor({
   })
 
   const isEmpty = editor?.isEmpty;
-  const isFocused = editor?.isFocused;
 
   // Focus editor when shouldFocus becomes true
   useEffect(() => {
@@ -178,7 +177,7 @@ export function BlockEditor({
         </div>
         
         <EditorContent editor={editor} />
-        {isEmpty && isFocused && isUserFocused && (
+        {isEmpty && isUserFocused && (
           <div className="absolute left-2 top-1 text-gray-400 pointer-events-none">
             Type '/' for commands...
           </div>
