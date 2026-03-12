@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { PrismaClient } from '@prisma/client'
@@ -96,16 +97,15 @@ export default async function FolderPage({
         <div className="flex items-center gap-1.5 font-ui text-lg text-white/30 mb-6">
           <Link href="/documents" className="hover:text-white transition-colors">Home</Link>
           {breadcrumb.map(ancestor => (
-            <>
-              <ChevronRight key={`arrow-${ancestor.id}`} size={13} />
+            <Fragment key={ancestor.id}>
+              <ChevronRight size={13} />
               <Link
-                key={ancestor.id}
                 href={`/documents/folders/${ancestor.id}`}
                 className="hover:text-white transition-colors"
               >
                 {ancestor.name}
               </Link>
-            </>
+            </Fragment>
           ))}
           <ChevronRight size={13} />
           <span className="text-white/60">{folder.name}</span>
