@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { BlockEditor } from './block-editor'
 
 type Block = {
@@ -18,6 +18,7 @@ type BlocksManagerProps = {
 export function BlocksManager({ documentId, initialBlocks }: BlocksManagerProps) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks)
   const [focusBlockId, setFocusBlockId] = useState<string | null>(null)
+  const [focusPosition, setFocusPosition] = useState<'start' | 'end'>('start')
 
   const createBlock = async (afterOrder: number) => {
     const response = await fetch(`/api/documents/${documentId}/blocks`, {
@@ -40,7 +41,8 @@ export function BlocksManager({ documentId, initialBlocks }: BlocksManagerProps)
       return [...updated, newBlock].sort((a, b) => a.order - b.order)
     })
 
-    // Focus the new block
+    // Focus the new block at start
+    setFocusPosition('start')
     setFocusBlockId(newBlock.id)
   }
 
@@ -57,6 +59,7 @@ export function BlocksManager({ documentId, initialBlocks }: BlocksManagerProps)
     setBlocks((prev) => prev.filter((b) => b.id !== blockId))
 
     if (prevBlock) {
+      setFocusPosition('end')
       setFocusBlockId(prevBlock.id)
     }
   }
@@ -88,7 +91,7 @@ export function BlocksManager({ documentId, initialBlocks }: BlocksManagerProps)
           onEnter={() => createBlock(block.order)}
           onBackspace={() => deleteBlock(block.id)}
           onUpdate={(content) => updateBlock(block.id, content)}
-          shouldFocus={focusBlockId === block.id}
+          focusPosition={focusBlockId === block.id ? focusPosition : undefined}
           onFocused={() => setFocusBlockId(null)}
         />
       ))}
