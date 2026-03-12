@@ -458,10 +458,10 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
       </div>
 
       {/* Nav */}
-      <div className="px-2 py-3">
+      <div className="px-2 py-3 gap-1">
         <Link
           href="/documents"
-          className={`flex items-center gap-2.5 px-3 py-2 font-ui text-xl rounded transition-colors ${
+          className={`w-full flex items-center gap-2.5 px-3 py-2 font-ui text-xl rounded transition-colors ${
             pathname === '/documents'
               ? 'text-white bg-white/8'
               : 'text-white/50 hover:text-white hover:bg-white/5'
