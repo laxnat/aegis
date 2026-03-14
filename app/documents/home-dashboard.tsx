@@ -47,10 +47,12 @@ export function HomeDashboard({ initialFolders, initialDocs }: Props) {
   const [folders, setFolders] = useState(initialFolders)
   const [docs, setDocs] = useState(initialDocs)
   const [dragOver, setDragOver] = useState<string | null>(null)
+  const [draggingItem, setDraggingItem] = useState<{ id: string; type: 'folder' | 'doc' } | null>(null)
   const [panelFolder, setPanelFolder] = useState<FolderData | null>(null)
   const [panelPos, setPanelPos] = useState({ top: 0, left: 0 })
   const dragItem = useRef<{ id: string; type: 'folder' | 'doc' } | null>(null)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isDragging = useRef(false)
 
   const openPanel = (folder: FolderData, rect: DOMRect) => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
@@ -62,6 +64,7 @@ export function HomeDashboard({ initialFolders, initialDocs }: Props) {
   }
 
   const scheduleClose = () => {
+    if (isDragging.current) return
     closeTimer.current = setTimeout(() => setPanelFolder(null), 200)
   }
 
@@ -79,18 +82,38 @@ export function HomeDashboard({ initialFolders, initialDocs }: Props) {
     const item = dragItem.current
     if (!item) return
     dragItem.current = null
+    setDraggingItem(null)
     setDragOver(null)
     if (item.type === 'folder' && item.id === targetFolderId) return
 
     if (item.type === 'doc') {
-      if (targetFolderId) setDocs(prev => prev.filter(d => d.id !== item.id))
+      if (targetFolderId) {
+        const doc = docs.find(d => d.id === item.id)
+        setDocs(prev => prev.filter(d => d.id !== item.id))
+        if (doc && targetFolderId === panelFolder?.id) {
+          setPanelFolder(prev => prev ? {
+            ...prev,
+            documents: [doc, ...prev.documents],
+            docCount: prev.docCount + 1,
+          } : null)
+        }
+      }
       await fetch(`/api/documents/${item.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folderId: targetFolderId }),
       })
     } else {
-      if (targetFolderId) setFolders(prev => prev.filter(f => f.id !== item.id))
+      if (targetFolderId) {
+        const folder = folders.find(f => f.id === item.id)
+        setFolders(prev => prev.filter(f => f.id !== item.id))
+        if (folder && targetFolderId === panelFolder?.id) {
+          setPanelFolder(prev => prev ? {
+            ...prev,
+            subFolders: [{ id: folder.id, name: folder.name, docCount: folder.docCount, updatedAt: folder.updatedAt }, ...prev.subFolders],
+          } : null)
+        }
+      }
       await fetch(`/api/folders/${item.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -154,10 +177,12 @@ export function HomeDashboard({ initialFolders, initialDocs }: Props) {
                     draggable
                     onDragStart={e => {
                       dragItem.current = { id: item.id, type: 'folder' }
+                      setDraggingItem({ id: item.id, type: 'folder' })
+                      isDragging.current = true
                       e.dataTransfer.effectAllowed = 'move'
                     }}
-                    onDragEnd={() => { dragItem.current = null; setDragOver(null) }}
-                    onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOver(item.id) }}
+                    onDragEnd={() => { dragItem.current = null; setDraggingItem(null); isDragging.current = false; setDragOver(null) }}
+                    onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOver(item.id); if (panelFolder?.id !== item.id) openPanel(folder, e.currentTarget.getBoundingClientRect()) }}
                     onDragLeave={e => { e.stopPropagation(); setDragOver(prev => prev === item.id ? null : prev) }}
                     onDrop={e => { e.preventDefault(); e.stopPropagation(); handleDrop(item.id) }}
                     onMouseEnter={e => openPanel(folder, e.currentTarget.getBoundingClientRect())}
@@ -180,9 +205,11 @@ export function HomeDashboard({ initialFolders, initialDocs }: Props) {
                     draggable
                     onDragStart={e => {
                       dragItem.current = { id: item.id, type: 'doc' }
+                      setDraggingItem({ id: item.id, type: 'doc' })
+                      isDragging.current = true
                       e.dataTransfer.effectAllowed = 'move'
                     }}
-                    onDragEnd={() => { dragItem.current = null; setDragOver(null) }}
+                    onDragEnd={() => { dragItem.current = null; setDraggingItem(null); isDragging.current = false; setDragOver(null) }}
                   >
                     <DocCard
                       id={doc.id}
@@ -213,36 +240,62 @@ export function HomeDashboard({ initialFolders, initialDocs }: Props) {
 
           {/* Contents */}
           <div className="py-1 max-h-64 overflow-y-auto">
-            {panelFolder.subFolders.length === 0 && panelFolder.documents.length === 0 ? (
-              <p className="px-3 py-3 font-ui text-lg text-white/25 text-center">Empty</p>
-            ) : (
-              <>
-                {panelFolder.subFolders.map(sf => (
-                  <Link
-                    key={sf.id}
-                    href={`/documents/folders/${sf.id}`}
-                    className="flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg mx-1 transition-colors"
-                  >
-                    <Folder size={13} className="text-primary/50 shrink-0" />
-                    <span className="flex-1 truncate">{sf.name}</span>
-                    <span className="text-white/25 text-xs shrink-0">{sf.docCount}</span>
-                  </Link>
-                ))}
-                {panelFolder.subFolders.length > 0 && panelFolder.documents.length > 0 && (
-                  <div className="my-1 border-t border-white/5" />
-                )}
-                {panelFolder.documents.map(doc => (
-                  <Link
-                    key={doc.id}
-                    href={`/documents/${doc.id}`}
-                    className="flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg mx-1 transition-colors"
-                  >
-                    <FileText size={13} className="text-primary/40 shrink-0" />
-                    <span className="flex-1 truncate">{doc.title}</span>
-                  </Link>
-                ))}
-              </>
-            )}
+            {(() => {
+              const isDragTarget = draggingItem && dragOver === panelFolder.id
+              const pendingDoc = isDragTarget && draggingItem.type === 'doc'
+                ? docs.find(d => d.id === draggingItem.id) ?? null
+                : null
+              const pendingFolder = isDragTarget && draggingItem.type === 'folder'
+                ? folders.find(f => f.id === draggingItem.id) ?? null
+                : null
+              const hasContent = panelFolder.subFolders.length > 0 || panelFolder.documents.length > 0 || pendingDoc || pendingFolder
+
+              if (!hasContent) {
+                return <p className="px-3 py-3 font-ui text-lg text-white/25 text-center">Empty</p>
+              }
+
+              return (
+                <>
+                  {pendingFolder && (
+                    <div className="flex items-center gap-2 px-3 py-1 font-ui text-lg text-primary/60 rounded-lg mx-1 bg-white/5">
+                      <Folder size={13} className="text-primary/50 shrink-0" />
+                      <span className="flex-1 truncate">{pendingFolder.name}</span>
+                      <span className="text-white/25 text-xs shrink-0">{pendingFolder.docCount}</span>
+                    </div>
+                  )}
+                  {panelFolder.subFolders.map(sf => (
+                    <Link
+                      key={sf.id}
+                      href={`/documents/folders/${sf.id}`}
+                      className="flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg mx-1 transition-colors"
+                    >
+                      <Folder size={13} className="text-primary/50 shrink-0" />
+                      <span className="flex-1 truncate">{sf.name}</span>
+                      <span className="text-white/25 text-xs shrink-0">{sf.docCount}</span>
+                    </Link>
+                  ))}
+                  {(panelFolder.subFolders.length > 0 || pendingFolder) && (panelFolder.documents.length > 0 || pendingDoc) && (
+                    <div className="my-1 border-t border-white/5" />
+                  )}
+                  {pendingDoc && (
+                    <div className="flex items-center gap-2 px-3 py-1 font-ui text-lg text-primary/60 rounded-lg mx-1 bg-white/5">
+                      <FileText size={13} className="text-primary/40 shrink-0" />
+                      <span className="flex-1 truncate">{pendingDoc.title}</span>
+                    </div>
+                  )}
+                  {panelFolder.documents.map(doc => (
+                    <Link
+                      key={doc.id}
+                      href={`/documents/${doc.id}`}
+                      className="flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg mx-1 transition-colors"
+                    >
+                      <FileText size={13} className="text-primary/40 shrink-0" />
+                      <span className="flex-1 truncate">{doc.title}</span>
+                    </Link>
+                  ))}
+                </>
+              )
+            })()}
           </div>
         </div>,
         document.body
