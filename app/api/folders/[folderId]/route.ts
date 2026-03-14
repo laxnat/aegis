@@ -23,9 +23,10 @@ export async function PATCH(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  const data: { name?: string; parentId?: string | null } = {}
+  const data: { name?: string; parentId?: string | null; pinned?: boolean } = {}
   if (body.name !== undefined) data.name = body.name
   if ('parentId' in body) data.parentId = body.parentId
+  if (body.pinned !== undefined) data.pinned = body.pinned
 
   const updated = await prisma.folder.update({ where: { id }, data })
   return NextResponse.json(updated)
