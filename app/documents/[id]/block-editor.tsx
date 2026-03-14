@@ -378,7 +378,7 @@ export function BlockEditor({
                       <p className={`font-ui text-lg leading-tight transition-colors ${i === activeIndex ? 'text-white' : 'text-white/70'}`}>
                         {cmd.label}
                       </p>
-                      <p className="font-ui text-sm text-white/30 leading-tight">{cmd.description}</p>
+                      <p className="font-ui text-base text-white/30 leading-tight">{cmd.description}</p>
                     </div>
                   </button>
                 ))
@@ -386,7 +386,7 @@ export function BlockEditor({
             </div>
             {commandQuery && (
               <div className="px-3 py-1.5 border-t border-white/5">
-                <p className="font-ui text-xs text-white/20">↑↓ navigate · ↵ apply · esc dismiss</p>
+                <p className="font-ui text-sm text-white/20">↑↓ navigate · ↵ apply · esc dismiss</p>
               </div>
             )}
           </div>

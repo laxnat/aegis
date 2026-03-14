@@ -347,7 +347,7 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
             {childDocs.map(doc => renderDoc(doc, depth + 1))}
             {childFolders.length === 0 && childDocs.length === 0 && (
               <p
-                className="font-ui text-xs text-white/20 py-1.5"
+                className="font-ui text-sm text-white/20 py-1.5"
                 style={{ paddingLeft: `${(depth + 1) * 12 + 28}px` }}
               >
                 Empty
@@ -476,7 +476,7 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
         >
           <Search size={20} />
           Search
-          <kbd className="ml-auto font-ui text-xs text-white/20 border border-white/10 rounded px-1.5 py-0.5">⌘K</kbd>
+          <kbd className="ml-auto font-ui text-sm text-white/20 border border-white/10 rounded px-1.5 py-0.5">⌘K</kbd>
         </button>
       </div>
 

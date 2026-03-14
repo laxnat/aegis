@@ -137,14 +137,14 @@ export function SearchPalette({ folders, docs, open, onClose }: Props) {
               <X size={15} />
             </button>
           ) : (
-            <kbd className="font-ui text-xs text-white/20 border border-white/10 rounded px-1.5 py-0.5">esc</kbd>
+            <kbd className="font-ui text-sm text-white/20 border border-white/10 rounded px-1.5 py-0.5">esc</kbd>
           )}
         </div>
 
         {/* Results */}
         <div ref={listRef} className="py-1.5 max-h-72 overflow-y-auto">
           {!query.trim() && (
-            <p className="px-4 pt-1 pb-1.5 font-ui text-sm text-white/25 tracking-widest uppercase">
+            <p className="px-4 pt-1 pb-1.5 font-ui text-base text-white/25 tracking-widest uppercase">
               Recent
             </p>
           )}
@@ -167,7 +167,7 @@ export function SearchPalette({ folders, docs, open, onClose }: Props) {
                   : <FileText size={16} className={i === activeIndex ? 'text-primary/80 shrink-0' : 'text-primary/35 shrink-0'} />
                 }
                 <span className="truncate">{result.label}</span>
-                <span className={`ml-auto font-ui text-sm shrink-0 ${i === activeIndex ? 'text-white/35' : 'text-white/15'}`}>
+                <span className={`ml-auto font-ui text-base shrink-0 ${i === activeIndex ? 'text-white/35' : 'text-white/15'}`}>
                   {result.kind === 'folder' ? 'Folder' : 'Doc'}
                 </span>
               </button>
@@ -177,9 +177,9 @@ export function SearchPalette({ folders, docs, open, onClose }: Props) {
 
         {/* Footer */}
         <div className="px-4 py-2 border-t border-white/5 flex items-center gap-5">
-          <span className="font-ui text-xs text-white/20">↑↓ navigate</span>
-          <span className="font-ui text-xs text-white/20">↵ open</span>
-          <span className="font-ui text-xs text-white/20 ml-auto">⌘K</span>
+          <span className="font-ui text-sm text-white/20">↑↓ navigate</span>
+          <span className="font-ui text-sm text-white/20">↵ open</span>
+          <span className="font-ui text-sm text-white/20 ml-auto">⌘K</span>
         </div>
       </div>
     </div>,
