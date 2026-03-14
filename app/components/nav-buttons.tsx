@@ -9,14 +9,14 @@ export function NavButtons() {
   return (
     <div className="flex items-center gap-1 p-2 bg-tertiary">
       <button
-        onClick={() => router.back()}
+        onClick={() => { router.back(); router.refresh() }}
         className="p-2 hover:bg-white/8 text-white/50 hover:text-white rounded transition-colors"
         title="Go back"
       >
         <ChevronLeft size={16} />
       </button>
       <button
-        onClick={() => router.forward()}
+        onClick={() => { router.forward(); router.refresh() }}
         className="p-2 hover:bg-white/8 text-white/50 hover:text-white rounded transition-colors"
         title="Go forward"
       >
