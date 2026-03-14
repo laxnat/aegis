@@ -9,6 +9,7 @@ import { CreateFolderButton } from '../../create-folder-button'
 import { FolderCard } from '../../folder-card'
 import { DocCard } from '../../doc-card'
 import { FileText, Folder } from 'lucide-react'
+import { RecentlyViewedTracker } from '@/app/components/recently-viewed-tracker'
 
 const prisma = new PrismaClient()
 
@@ -114,7 +115,8 @@ export default async function FolderPage({
         {/* Header */}
         <div className="flex items-end justify-between mb-10">
           <div>
-            <h1 className="font-display text-8xl text-white">{folder.name}</h1>
+            <RecentlyViewedTracker id={folderId} title={folder.name} type="folder" />
+        <h1 className="font-display text-8xl text-white">{folder.name}</h1>
             <p className="font-ui text-base text-primary/60 mt-1 tracking-wide">
               {subFolders.length > 0 && (
                 <span>{subFolders.length} {subFolders.length === 1 ? 'folder' : 'folders'}</span>
@@ -142,11 +144,11 @@ export default async function FolderPage({
               <FileText size={36} />
             </div>
             <p className="font-ui text-primary/50 tracking-wide">This folder is empty</p>
-            <p className="font-ui text-xs text-primary/30">Add documents or sub-folders to get started</p>
+            <p className="font-ui text-sm text-primary/30">Add documents or sub-folders to get started</p>
           </div>
         ) : (
           <>
-            <p className="font-ui text-sm text-white/20 tracking-widest uppercase mb-4">
+            <p className="font-ui text-base text-white/20 tracking-widest uppercase mb-4">
               Last updated
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

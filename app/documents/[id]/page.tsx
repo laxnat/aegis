@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation'
 import { PrismaClient } from '@prisma/client'
 import { notFound } from 'next/navigation'
 import { EditableTitle } from './editable-title'
-import { BlocksManager } from './blocks-manager'  // Add this
+import { BlocksManager } from './blocks-manager'
+import { RecentlyViewedTracker } from '@/app/components/recently-viewed-tracker'
 
 const prisma = new PrismaClient()
 
@@ -40,6 +41,7 @@ export default async function DocumentPage({
 
   return (
     <div className="p-8">
+      <RecentlyViewedTracker id={document.id} title={document.title} type="doc" />
       <div className="max-w-4xl mx-auto">
         <EditableTitle initialTitle={document.title} documentId={document.id} />
         
