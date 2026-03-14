@@ -15,6 +15,7 @@ model Folder {
   name      String     @default("New Folder")
   userId    String
   parentId  String?
+  pinned    Boolean    @default(false)
   parent    Folder?    @relation("FolderChildren", fields: [parentId], references: [id], onDelete: Cascade)
   children  Folder[]   @relation("FolderChildren")
   documents Document[]
@@ -30,6 +31,8 @@ model Document {
   title     String   @default("Untitled")
   userId    String
   folderId  String?
+  pinned    Boolean  @default(false)
+  status    String?
   folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
   blocks    Block[]
   createdAt DateTime @default(now())
