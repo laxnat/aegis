@@ -18,7 +18,7 @@ export default async function DocumentsPage() {
       include: {
         _count: { select: { documents: true } },
         documents: {
-          select: { id: true, title: true, updatedAt: true },
+          select: { id: true, title: true, updatedAt: true, createdAt: true, pinned: true, status: true },
           orderBy: { updatedAt: 'desc' },
         },
         children: {
@@ -30,7 +30,7 @@ export default async function DocumentsPage() {
     prisma.document.findMany({
       where: { userId: user.id, folderId: null },
       orderBy: { updatedAt: 'desc' },
-      select: { id: true, title: true, updatedAt: true },
+      select: { id: true, title: true, updatedAt: true, createdAt: true, pinned: true, status: true },
     }),
   ])
 
@@ -38,11 +38,16 @@ export default async function DocumentsPage() {
     id: f.id,
     name: f.name,
     updatedAt: f.updatedAt.toISOString(),
+    createdAt: f.createdAt.toISOString(),
+    pinned: f.pinned,
     docCount: f._count.documents,
     documents: f.documents.map(d => ({
       id: d.id,
       title: d.title,
       updatedAt: d.updatedAt.toISOString(),
+      createdAt: d.createdAt.toISOString(),
+      pinned: d.pinned,
+      status: d.status,
     })),
     subFolders: f.children.map(c => ({
       id: c.id,
@@ -56,6 +61,9 @@ export default async function DocumentsPage() {
     id: d.id,
     title: d.title,
     updatedAt: d.updatedAt.toISOString(),
+    createdAt: d.createdAt.toISOString(),
+    pinned: d.pinned,
+    status: d.status,
   }))
 
   return (

@@ -2,19 +2,32 @@
 
 import { useRef, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { MoreHorizontal, Trash2, Pencil, Copy } from 'lucide-react'
+import { MoreHorizontal, Trash2, Pencil, Copy, ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+
+const STATUSES = [
+  { value: null,          label: 'None',        dot: 'bg-white/20',   text: 'text-white/40' },
+  { value: 'draft',       label: 'Draft',        dot: 'bg-white/50',   text: 'text-white/60' },
+  { value: 'in-progress', label: 'In Progress',  dot: 'bg-primary',    text: 'text-primary' },
+  { value: 'review',      label: 'Review',       dot: 'bg-highlight',  text: 'text-highlight' },
+  { value: 'done',        label: 'Done',         dot: 'bg-green-400',  text: 'text-green-400' },
+]
+
+export function getStatusConfig(status: string | null | undefined) {
+  return STATUSES.find(s => s.value === (status ?? null)) ?? STATUSES[0]
+}
 
 type DocumentMenuProps = {
   documentId: string
   title: string
+  status?: string | null
   afterDelete?: () => void
   onOpenChange?: (open: boolean) => void
 }
 
-export function DocumentMenu({ documentId, title, afterDelete, onOpenChange }: DocumentMenuProps) {
+export function DocumentMenu({ documentId, title, status, afterDelete, onOpenChange }: DocumentMenuProps) {
   const [open, setOpen] = useState(false)
-  const [mode, setMode] = useState<'menu' | 'rename'>('menu')
+  const [mode, setMode] = useState<'menu' | 'rename' | 'status'>('menu')
   const [renameValue, setRenameValue] = useState(title)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -95,7 +108,20 @@ export function DocumentMenu({ documentId, title, afterDelete, onOpenChange }: D
     }
   }
 
+  const handleStatusChange = async (e: React.MouseEvent, newStatus: string | null) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setOpenWithCallback(false)
+    await fetch(`/api/documents/${documentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
+    router.refresh()
+  }
+
   const btnClass = 'w-full flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left'
+  const currentStatus = getStatusConfig(status)
 
   return (
     <div className="relative" onClick={(e) => e.preventDefault()}>
@@ -128,6 +154,26 @@ export function DocumentMenu({ documentId, title, afterDelete, onOpenChange }: D
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 font-ui text-lg text-white outline-none focus:border-white/25"
               />
             </div>
+          ) : mode === 'status' ? (
+            <>
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMode('menu') }}
+                className="w-full flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/40 hover:text-white/70 hover:bg-white/5 rounded-lg transition-colors text-left mb-1"
+              >
+                <ChevronLeft size={14} /> Status
+              </button>
+              <div className="border-t border-white/5 mb-1" />
+              {STATUSES.map(s => (
+                <button
+                  key={String(s.value)}
+                  onClick={(e) => handleStatusChange(e, s.value)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-1 font-ui text-lg rounded-lg transition-colors text-left ${s.value === (status ?? null) ? 'text-white bg-white/8' : 'text-white/70 hover:text-white hover:bg-white/5'}`}
+                >
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
+                  {s.label}
+                </button>
+              ))}
+            </>
           ) : (
             <>
               <div className='w-full flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 rounded-lg transition-colors text-left'>
@@ -143,6 +189,14 @@ export function DocumentMenu({ documentId, title, afterDelete, onOpenChange }: D
               <button onClick={handleDuplicate} className={btnClass}>
                 <Copy size={14} />
                 Duplicate
+              </button>
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMode('status') }}
+                className={btnClass}
+              >
+                <span className={`w-2 h-2 rounded-full shrink-0 ${currentStatus.dot}`} />
+                Status
+                <span className={`ml-auto font-ui text-base ${currentStatus.text}`}>{currentStatus.label}</span>
               </button>
               <div className="my-1 border-t border-white/5" />
               <button
