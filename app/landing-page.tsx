@@ -3,15 +3,20 @@
 import Link from 'next/link'
 import { motion, type Variants } from 'framer-motion'
 import { FileText, Folder, Zap } from 'lucide-react'
+import { AnimatedGroup } from './components/ui/animated-group'
+import { InfiniteSlider } from './components/ui/infinite-slider'
+import { ProgressiveBlur } from './components/ui/progressive-blur'
+import { MarketingNav } from './components/marketing-nav'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
 const fadeUp: Variants = {
-  hidden: { y: 24, opacity: 0 },
+  hidden: { y: 24, opacity: 0, filter: 'blur(8px)' },
   visible: (i: number) => ({
     y: 0,
     opacity: 1,
-    transition: { duration: 0.55, delay: i * 0.08, ease: EASE },
+    filter: 'blur(0px)',
+    transition: { duration: 0.6, delay: i * 0.1, ease: EASE },
   }),
 }
 
@@ -23,50 +28,24 @@ const fadeIn: Variants = {
   }),
 }
 
-type Props = {
-  user: { email: string; avatarUrl: string | null } | null
-}
+const sliderItems = [
+  'Rich Documents',
+  'Smart Folders',
+  'Slash Commands',
+  'Drag & Drop',
+  'Instant Search',
+  'Keyboard First',
+  'Status Labels',
+  'Pin Anything',
+  'Nested Folders',
+  'Live Updates',
+]
 
-export function LandingPage({ user }: Props) {
+export function LandingPage() {
   return (
     <div className="min-h-screen bg-secondary text-white flex flex-col">
 
-      {/* ── Nav ── */}
-      <motion.header
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: EASE }}
-        className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-8 h-16 bg-secondary/80 backdrop-blur-md border-b border-white/5"
-      >
-        <span className="font-display text-3xl text-white tracking-widest">AEGIS</span>
-
-        <div className="flex items-center gap-3">
-          {user ? (
-            <Link
-              href="/documents"
-              className="flex items-center gap-2.5 px-4 py-1.5 bg-highlight text-secondary font-display text-lg tracking-widest hover:bg-primary hover:text-white transition-colors"
-            >
-              {user.avatarUrl
-                ? <img src={user.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
-                : <span className="w-5 h-5 rounded-full bg-secondary/30 flex items-center justify-center font-ui text-xs shrink-0">{user.email[0].toUpperCase()}</span>
-              }
-              <span className="font-ui text-base normal-case tracking-normal">{user.email}</span>
-            </Link>
-          ) : (
-            <>
-              <Link href="/login" className="font-ui text-lg text-white/50 hover:text-white transition-colors px-2">
-                Log in
-              </Link>
-              <Link
-                href="/signup"
-                className="px-5 py-1.5 bg-highlight text-secondary font-display text-lg tracking-widest hover:bg-primary hover:text-white transition-colors"
-              >
-                Get started
-              </Link>
-            </>
-          )}
-        </div>
-      </motion.header>
+      <MarketingNav />
 
       {/* ── Hero ── */}
       <section className="relative flex-1 flex flex-col items-center justify-center text-center px-8 pt-16 pb-24 overflow-hidden min-h-screen">
@@ -87,7 +66,7 @@ export function LandingPage({ user }: Props) {
               position: 'absolute',
               top: s.top,
               left: s.left,
-              right: s.right,
+              right: (s as { right?: string }).right,
               width: s.w,
               height: s.h,
               transform: `rotate(${s.rot})`,
@@ -103,70 +82,55 @@ export function LandingPage({ user }: Props) {
         <motion.div variants={fadeIn} custom={3} initial="hidden" animate="visible"
           className="absolute bottom-10 right-8 w-3 h-3 bg-primary" />
 
-        {/* Eyebrow */}
-        <motion.p
-          variants={fadeUp} custom={1} initial="hidden" animate="visible"
-          className="font-ui text-sm text-primary tracking-[0.5em] uppercase mb-6"
+        <AnimatedGroup
+          variants={{
+            container: {
+              visible: {
+                transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+              },
+            },
+            item: {
+              hidden: { y: 20, opacity: 0, filter: 'blur(10px)' },
+              visible: {
+                y: 0,
+                opacity: 1,
+                filter: 'blur(0px)',
+                transition: { type: 'spring', bounce: 0.3, duration: 1.2 },
+              },
+            },
+          }}
+          className="flex flex-col items-center"
         >
-          Your workspace. Personified.
-        </motion.p>
+          {/* Eyebrow */}
+          <p className="font-ui text-sm text-primary tracking-[0.5em] uppercase mb-6">
+            Your workspace. Personified.
+          </p>
 
-        {/* Title */}
-        <motion.h1
-          variants={fadeUp} custom={2} initial="hidden" animate="visible"
-          className="font-display text-[11rem] leading-none text-white mb-2"
-        >
-          AEGIS
-        </motion.h1>
+          {/* Title */}
+          <h1 className="font-display text-[11rem] leading-none text-white mb-2">
+            AEGIS
+          </h1>
 
-        {/* Highlight bar */}
-        <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ delay: 0.35, duration: 0.45, ease: EASE }}
-          className="h-1.5 w-40 bg-highlight origin-left mb-8"
-        />
+          {/* Highlight bar */}
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: 0.55, duration: 0.45, ease: EASE }}
+            className="h-1.5 w-40 bg-highlight origin-left mb-8"
+          />
 
-        {/* Subtitle */}
-        <motion.p
-          variants={fadeUp} custom={3} initial="hidden" animate="visible"
-          className="font-ui text-xl text-accent/80 max-w-lg leading-relaxed mb-10"
-        >
-          A bold new way to capture ideas, organize documents,
-          and move through your work with intention.
-        </motion.p>
+          {/* Subtitle */}
+          <p className="font-ui text-xl text-accent/80 max-w-lg leading-relaxed mb-10">
+            A bold new way to capture ideas, organize documents,
+            and move through your work with intention.
+          </p>
 
-        {/* CTAs */}
-        <motion.div
-          variants={fadeUp} custom={4} initial="hidden" animate="visible"
-          className="flex items-center gap-4"
-        >
-          {user ? (
-            <Link
-              href="/documents"
-              className="relative flex items-center gap-3 px-8 py-3 bg-highlight text-secondary font-display text-2xl tracking-widest overflow-hidden group"
-            >
-              <span className="relative z-10 flex items-center gap-3">
-                {user.avatarUrl
-                  ? <img src={user.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
-                  : <span className="w-6 h-6 rounded-full bg-secondary/30 flex items-center justify-center font-ui text-sm shrink-0">{user.email[0].toUpperCase()}</span>
-                }
-                <span className="font-ui text-base normal-case tracking-normal">{user.email}</span>
-              </span>
-              <span className="absolute inset-0 bg-primary translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-              <span className="absolute inset-0 flex items-center justify-center gap-3 translate-x-full group-hover:translate-x-0 transition-transform duration-300 z-20">
-                {user.avatarUrl
-                  ? <img src={user.avatarUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
-                  : <span className="w-6 h-6 rounded-full bg-highlight/30 flex items-center justify-center font-ui text-sm text-white shrink-0">{user.email[0].toUpperCase()}</span>
-                }
-                <span className="font-ui text-base normal-case tracking-normal text-white">{user.email}</span>
-              </span>
-            </Link>
-          ) : (
+          {/* CTAs */}
+          <div className="flex items-center gap-4">
             <>
               <Link
                 href="/signup"
-                className="relative px-8 py-3 bg-highlight text-secondary font-display text-2xl tracking-widest overflow-hidden group"
+                className="relative px-8 py-3 rounded-xl bg-highlight text-secondary font-display text-2xl tracking-widest overflow-hidden group"
               >
                 <span className="relative z-10">GET STARTED</span>
                 <span className="absolute inset-0 bg-primary translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
@@ -174,17 +138,31 @@ export function LandingPage({ user }: Props) {
               </Link>
               <Link
                 href="/login"
-                className="relative px-8 py-3 border-2 border-white/20 text-white/60 font-display text-2xl tracking-widest overflow-hidden group hover:border-white/50 hover:text-white transition-colors"
+                className="relative px-8 py-3 rounded-xl border-2 border-white/20 text-white/60 font-display text-2xl tracking-widest overflow-hidden group hover:border-white/50 hover:text-white transition-colors"
               >
                 LOG IN
               </Link>
             </>
-          )}
-        </motion.div>
+          </div>
+        </AnimatedGroup>
       </section>
 
+      {/* ── Infinite Slider ── */}
+      <div className="border-t border-b border-white/5 bg-tertiary py-5 relative overflow-hidden">
+        <InfiniteSlider gap={64} duration={30} speedOnHover={60}>
+          {sliderItems.map(item => (
+            <div key={item} className="flex items-center gap-3 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/50 shrink-0" />
+              <span className="font-display text-xl tracking-widest text-white/30 uppercase">{item}</span>
+            </div>
+          ))}
+        </InfiniteSlider>
+        <ProgressiveBlur direction="left" blurIntensity={0.6} className="absolute left-0 top-0 h-full w-24" />
+        <ProgressiveBlur direction="right" blurIntensity={0.6} className="absolute right-0 top-0 h-full w-24" />
+      </div>
+
       {/* ── Features ── */}
-      <section className="border-t border-white/5 bg-tertiary px-8 py-20">
+      <section id="features" className="border-t border-white/5 bg-tertiary px-8 py-20">
         <div className="max-w-4xl mx-auto">
           <motion.p
             variants={fadeUp} custom={0} initial="hidden" whileInView="visible" viewport={{ once: true }}
