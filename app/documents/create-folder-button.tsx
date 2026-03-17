@@ -23,7 +23,7 @@ export function CreateFolderButton({ parentId }: { parentId?: string } = {}) {
     <button
       onClick={handleCreate}
       disabled={loading}
-      className="flex items-center gap-2 font-display text-xl text-white/60 border border-white/10 px-5 py-2 tracking-widest hover:text-white hover:border-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex items-center gap-2 font-display text-xl text-white/60 border border-white/10 px-5 py-2 rounded-xl tracking-widest hover:text-white hover:border-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <FolderPlus size={16} />
       {loading ? 'CREATING...' : 'NEW FOLDER'}

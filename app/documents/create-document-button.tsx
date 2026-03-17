@@ -26,7 +26,7 @@ export function CreateDocumentButton({ folderId }: { folderId?: string } = {}) {
     <button
       onClick={handleCreate}
       disabled={loading}
-      className="flex items-center gap-2 font-display text-xl text-secondary bg-highlight px-5 py-2 tracking-widest hover:bg-primary hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex items-center gap-2 font-display text-xl text-secondary bg-highlight px-5 py-2 rounded-xl tracking-widest hover:bg-primary hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <Plus size={16} strokeWidth={3} />
       {loading ? 'CREATING...' : 'NEW'}
