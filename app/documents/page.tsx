@@ -11,7 +11,7 @@ export default async function DocumentsPage() {
 
   if (!user) redirect('/login')
 
-  const [folders, documents] = await Promise.all([
+  const [folders, documents, sharedWithMe] = await Promise.all([
     prisma.folder.findMany({
       where: { userId: user.id, parentId: null },
       orderBy: { updatedAt: 'desc' },
@@ -31,6 +31,13 @@ export default async function DocumentsPage() {
       where: { userId: user.id, folderId: null },
       orderBy: { updatedAt: 'desc' },
       select: { id: true, title: true, updatedAt: true, createdAt: true, pinned: true, status: true },
+    }),
+    prisma.documentShare.findMany({
+      where: { sharedEmail: user.email! },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        document: { select: { id: true, title: true, updatedAt: true } },
+      },
     }),
   ])
 
