@@ -27,19 +27,34 @@ model Folder {
 }
 
 model Document {
-  id        String   @id @default(cuid())
-  title     String   @default("Untitled")
+  id        String          @id @default(cuid())
+  title     String          @default("Untitled")
   userId    String
   folderId  String?
-  pinned    Boolean  @default(false)
+  pinned    Boolean         @default(false)
   status    String?
-  folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folder    Folder?         @relation(fields: [folderId], references: [id], onDelete: SetNull)
   blocks    Block[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  shares    DocumentShare[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
   @@index([userId])
   @@index([folderId])
+}
+
+model DocumentShare {
+  id          String   @id @default(cuid())
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  ownerUserId String
+  sharedEmail String
+  permission  String   @default("view")
+  createdAt   DateTime @default(now())
+
+  @@unique([documentId, sharedEmail])
+  @@index([documentId])
+  @@index([sharedEmail])
 }
 
 model Block {
