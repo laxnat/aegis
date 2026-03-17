@@ -13,9 +13,10 @@ type Block = {
 type BlocksManagerProps = {
   documentId: string
   initialBlocks: Block[]
+  readOnly?: boolean
 }
 
-export function BlocksManager({ documentId, initialBlocks }: BlocksManagerProps) {
+export function BlocksManager({ documentId, initialBlocks, readOnly = false }: BlocksManagerProps) {
   const [blocks, setBlocks] = useState<Block[]>(initialBlocks)
   const [focusBlockId, setFocusBlockId] = useState<string | null>(null)
   const [focusPosition, setFocusPosition] = useState<'start' | 'end'>('start')
@@ -88,11 +89,12 @@ export function BlocksManager({ documentId, initialBlocks }: BlocksManagerProps)
           blockId={block.id}
           initialContent={block.content}
           blockType={block.type}
-          onEnter={() => createBlock(block.order)}
-          onBackspace={() => deleteBlock(block.id)}
-          onUpdate={(content) => updateBlock(block.id, content)}
+          onEnter={readOnly ? () => {} : () => createBlock(block.order)}
+          onBackspace={readOnly ? () => {} : () => deleteBlock(block.id)}
+          onUpdate={readOnly ? () => {} : (content) => updateBlock(block.id, content)}
           focusPosition={focusBlockId === block.id ? focusPosition : undefined}
           onFocused={() => setFocusBlockId(null)}
+          readOnly={readOnly}
         />
       ))}
     </div>

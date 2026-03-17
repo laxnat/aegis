@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation'
 type EditableTitleProps = {
   initialTitle: string
   documentId: string
+  readOnly?: boolean
 }
 
-export function EditableTitle({ initialTitle, documentId }: EditableTitleProps) {
+export function EditableTitle({ initialTitle, documentId, readOnly = false }: EditableTitleProps) {
   const [title, setTitle] = useState(initialTitle)
   const [isEditing, setIsEditing] = useState(false)
   const router = useRouter()
@@ -46,8 +47,8 @@ export function EditableTitle({ initialTitle, documentId }: EditableTitleProps) 
 
   return (
     <h1
-      onClick={() => setIsEditing(true)}
-      className="text-4xl font-bold cursor-pointer hover:text-gray-700"
+      onClick={() => !readOnly && setIsEditing(true)}
+      className={`text-4xl font-bold ${readOnly ? 'cursor-default' : 'cursor-pointer hover:text-gray-700'}`}
     >
       {title}
     </h1>

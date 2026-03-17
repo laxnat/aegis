@@ -21,6 +21,7 @@ type BlockEditorProps = {
   onUpdate: (content: string) => void
   focusPosition?: 'start' | 'end'
   onFocused?: () => void
+  readOnly?: boolean
 }
 
 type SlashCommand = {
@@ -133,6 +134,7 @@ export function BlockEditor({
   onUpdate,
   focusPosition,
   onFocused,
+  readOnly = false,
 }: BlockEditorProps) {
   const [showToolbar, setShowToolbar] = useState(false)
   const [isUserFocused, setIsUserFocused] = useState(false)
@@ -175,6 +177,7 @@ export function BlockEditor({
 
   const editor = useEditor({
     immediatelyRender: false,
+    editable: !readOnly,
     extensions: [
       StarterKit,
       Underline,
