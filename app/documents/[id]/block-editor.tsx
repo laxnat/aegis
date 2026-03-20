@@ -6,11 +6,15 @@ import Underline from '@tiptap/extension-underline'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 import Highlight from '@tiptap/extension-highlight'
+import { Table } from '@tiptap/extension-table'
+import { TableRow } from '@tiptap/extension-table-row'
+import { TableCell } from '@tiptap/extension-table-cell'
+import { TableHeader } from '@tiptap/extension-table-header'
 import { useState, useEffect, useRef } from 'react'
 import {
   Type, Heading1, Heading2, Heading3, Heading4,
   List, ListOrdered, ListChecks,
-  Quote, Code, Code2, Minus, Strikethrough, Highlighter,
+  Quote, Code, Code2, Minus, Strikethrough, Highlighter, Table2,
 } from 'lucide-react'
 
 type BlockEditorProps = {
@@ -130,6 +134,15 @@ const COMMANDS: SlashCommand[] = [
     action: e => e.chain().focus().toggleCodeBlock().run(),
   },
   {
+    id: 'table',
+    label: 'Table',
+    description: '3×3 table with header row',
+    icon: <Table2 size={15} />,
+    keywords: ['table', 'grid', 'rows', 'columns', 'spreadsheet'],
+    group: 'Blocks',
+    action: e => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+  },
+  {
     id: 'divider',
     label: 'Divider',
     description: 'Horizontal separator line',
@@ -239,6 +252,10 @@ export function BlockEditor({
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight,
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: initialContent,
     onUpdate: ({ editor }) => {
