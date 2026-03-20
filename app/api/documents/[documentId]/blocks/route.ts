@@ -18,13 +18,17 @@ export async function POST(
   const { documentId } = await params
   const { type, content, order } = await request.json()
 
-  // Verify document belongs to user
-  const document = await prisma.document.findUnique({
-    where: { id: documentId },
-  })
+  const document = await prisma.document.findUnique({ where: { id: documentId } })
+  if (!document) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (!document || document.userId !== user.id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const isOwner = document.userId === user.id
+  if (!isOwner) {
+    const share = await prisma.documentShare.findUnique({
+      where: { documentId_sharedEmail: { documentId, sharedEmail: user.email! } },
+    })
+    if (!share || share.permission !== 'edit') {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
   }
 
   const block = await prisma.block.create({
