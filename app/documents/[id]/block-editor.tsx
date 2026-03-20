@@ -1,6 +1,7 @@
 'use client'
 
 import { useEditor, EditorContent, Editor } from '@tiptap/react'
+import { Extension } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TaskList from '@tiptap/extension-task-list'
@@ -10,7 +11,7 @@ import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Type, Heading1, Heading2, Heading3, Heading4,
   List, ListOrdered, ListChecks,
@@ -21,7 +22,7 @@ type BlockEditorProps = {
   blockId: string
   initialContent: string
   blockType: string
-  onEnter: () => void
+  onEnter: (initialContent?: string) => void
   onBackspace: () => void
   onUpdate: (content: string) => void
   focusPosition?: 'start' | 'end'
@@ -136,11 +137,11 @@ const COMMANDS: SlashCommand[] = [
   {
     id: 'table',
     label: 'Table',
-    description: '3×3 table with header row',
+    description: 'Pick rows and columns',
     icon: <Table2 size={15} />,
     keywords: ['table', 'grid', 'rows', 'columns', 'spreadsheet'],
     group: 'Blocks',
-    action: e => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
+    action: () => {}, // handled by applyCommand
   },
   {
     id: 'divider',
@@ -208,9 +209,12 @@ export function BlockEditor({
   const [showCommands, setShowCommands] = useState(false)
   const [commandQuery, setCommandQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
+  const [showTablePicker, setShowTablePicker] = useState(false)
+  const [pickerHover, setPickerHover] = useState({ rows: 3, cols: 3 })
 
   const containerRef = useRef<HTMLDivElement>(null)
   const commandListRef = useRef<HTMLDivElement>(null)
+  const pickerRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<Editor | null>(null)
 
   // Refs for stable access inside Tiptap's handleKeyDown
@@ -219,10 +223,35 @@ export function BlockEditor({
   const filteredRef = useRef<SlashCommand[]>(COMMANDS)
   const isKeyboardNavRef = useRef(false)
   const suppressSlashRef = useRef(false)
+  const onEnterRef = useRef(onEnter)
 
   // Keep refs in sync
   useEffect(() => { showCommandsRef.current = showCommands }, [showCommands])
   useEffect(() => { activeIndexRef.current = activeIndex }, [activeIndex])
+  useEffect(() => { onEnterRef.current = onEnter }, [onEnter])
+
+  // Custom extension that intercepts Enter before StarterKit's handlers
+  const enterExtension = useMemo(() => Extension.create({
+    name: 'blockEnter',
+    priority: 10000,
+    addKeyboardShortcuts() {
+      return {
+        Enter: ({ editor }) => {
+          if (showCommandsRef.current) return false
+          let content: string | undefined
+          if (editor.isActive('heading', { level: 1 })) content = '<h1></h1>'
+          else if (editor.isActive('heading', { level: 2 })) content = '<h2></h2>'
+          else if (editor.isActive('heading', { level: 3 })) content = '<h3></h3>'
+          else if (editor.isActive('heading', { level: 4 })) content = '<h4></h4>'
+          else if (editor.isActive('bulletList')) content = '<ul><li><p></p></li></ul>'
+          else if (editor.isActive('orderedList')) content = '<ol><li><p></p></li></ol>'
+          else if (editor.isActive('taskList')) content = '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><p></p></li></ul>'
+          onEnterRef.current(content)
+          return true
+        },
+      }
+    },
+  }), []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const applyCommand = (cmd: SlashCommand) => {
     const ed = editorRef.current
@@ -230,11 +259,40 @@ export function BlockEditor({
     const { $head } = ed.state.selection
     const from = $head.pos - $head.parentOffset
     ed.chain().deleteRange({ from, to: $head.pos }).run()
-    cmd.action(ed)
     setShowCommands(false)
     showCommandsRef.current = false
     setCommandQuery('')
+    if (cmd.id === 'table') {
+      setPickerHover({ rows: 3, cols: 3 })
+      setShowTablePicker(true)
+      return
+    }
+    cmd.action(ed)
   }
+
+  const insertTable = (rows: number, cols: number) => {
+    editorRef.current?.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
+    setShowTablePicker(false)
+  }
+
+  // Close table picker on outside click
+  useEffect(() => {
+    if (!showTablePicker) return
+    function handleClick(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowTablePicker(false)
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setShowTablePicker(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showTablePicker])
 
   // Scroll active item into view — only when navigating via keyboard
   useEffect(() => {
@@ -247,6 +305,7 @@ export function BlockEditor({
     immediatelyRender: false,
     editable: !readOnly,
     extensions: [
+      enterExtension,
       StarterKit,
       Underline,
       TaskList,
@@ -306,7 +365,7 @@ export function BlockEditor({
     },
     editorProps: {
       attributes: {
-        class: 'prose max-w-none focus:outline-none min-h-[1.5rem] px-2 py-1',
+        class: 'prose max-w-none focus:outline-none min-h-[1.5rem] px-2 py-0.5',
       },
       handleKeyDown: (_view, event) => {
         // Command menu navigation
@@ -350,14 +409,24 @@ export function BlockEditor({
           }
         }
 
-        if (event.key === 'Enter' && !event.shiftKey) {
-          event.preventDefault()
-          onEnter()
-          return true
-        }
         if (event.key === 'Backspace' && editorRef.current?.isEmpty) {
           event.preventDefault()
-          onBackspace()
+          const ed = editorRef.current!
+          if (ed.isActive('heading')) {
+            ed.chain().focus().setParagraph().run()
+          } else if (ed.isActive('bulletList')) {
+            ed.chain().focus().toggleBulletList().run()
+          } else if (ed.isActive('orderedList')) {
+            ed.chain().focus().toggleOrderedList().run()
+          } else if (ed.isActive('taskList')) {
+            ed.chain().focus().toggleTaskList().run()
+          } else if (ed.isActive('blockquote')) {
+            ed.chain().focus().toggleBlockquote().run()
+          } else if (ed.isActive('codeBlock')) {
+            ed.chain().focus().toggleCodeBlock().run()
+          } else {
+            onBackspace()
+          }
           return true
         }
         return false
@@ -491,6 +560,37 @@ export function BlockEditor({
                 <p className="font-ui text-sm text-white/20">↑↓ navigate · ↵ apply · esc dismiss</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Table size picker */}
+        {showTablePicker && (
+          <div
+            ref={pickerRef}
+            className="absolute left-0 top-full mt-1 bg-secondary border border-white/10 rounded-xl shadow-2xl z-50 p-3"
+            onMouseDown={e => e.preventDefault()}
+          >
+            <p className="font-display text-xs tracking-widest text-white/30 mb-2.5">
+              {pickerHover.cols} × {pickerHover.rows} TABLE
+            </p>
+            <div className="flex flex-col gap-1">
+              {Array.from({ length: 8 }, (_, row) => (
+                <div key={row} className="flex gap-1">
+                  {Array.from({ length: 8 }, (_, col) => (
+                    <div
+                      key={col}
+                      onMouseEnter={() => setPickerHover({ rows: row + 1, cols: col + 1 })}
+                      onMouseDown={e => { e.preventDefault(); insertTable(row + 1, col + 1) }}
+                      className={`w-5 h-5 rounded-sm border cursor-pointer transition-colors ${
+                        row < pickerHover.rows && col < pickerHover.cols
+                          ? 'bg-primary/25 border-primary/50'
+                          : 'bg-white/5 border-white/10 hover:bg-white/8'
+                      }`}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

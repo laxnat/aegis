@@ -21,13 +21,13 @@ export function BlocksManager({ documentId, initialBlocks, readOnly = false }: B
   const [focusBlockId, setFocusBlockId] = useState<string | null>(null)
   const [focusPosition, setFocusPosition] = useState<'start' | 'end'>('start')
 
-  const createBlock = async (afterOrder: number) => {
+  const createBlock = async (afterOrder: number, initialContent?: string) => {
     const response = await fetch(`/api/documents/${documentId}/blocks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'text',
-        content: '',
+        content: initialContent ?? '',
         order: afterOrder + 1,
       }),
     })
@@ -82,14 +82,14 @@ export function BlocksManager({ documentId, initialBlocks, readOnly = false }: B
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       {blocks.map((block) => (
         <BlockEditor
           key={block.id}
           blockId={block.id}
           initialContent={block.content}
           blockType={block.type}
-          onEnter={readOnly ? () => {} : () => createBlock(block.order)}
+          onEnter={readOnly ? () => {} : (initialContent) => createBlock(block.order, initialContent)}
           onBackspace={readOnly ? () => {} : () => deleteBlock(block.id)}
           onUpdate={readOnly ? () => {} : (content) => updateBlock(block.id, content)}
           focusPosition={focusBlockId === block.id ? focusPosition : undefined}
