@@ -10,6 +10,7 @@ import { FolderCard } from './folder-card'
 import { DocCard } from './doc-card'
 import { CreateDocumentButton } from './create-document-button'
 import { CreateFolderButton } from './create-folder-button'
+import { useLoadingBar } from '../components/loading-bar'
 
 type DocData = { id: string; title: string; updatedAt: string; createdAt: string; pinned: boolean; status: string | null }
 type SubFolderData = { id: string; name: string; docCount: number; updatedAt: string }
@@ -51,6 +52,7 @@ const PANEL_WIDTH = 224 // w-56
 
 export function HomeDashboard({ initialFolders, initialDocs }: Props) {
   const router = useRouter()
+  const { start, done } = useLoadingBar()
   const [folders, setFolders] = useState(initialFolders)
   const [docs, setDocs] = useState(initialDocs)
   const [sort, setSort] = useState<SortKey>('updated')
@@ -92,6 +94,8 @@ export function HomeDashboard({ initialFolders, initialDocs }: Props) {
 
   const handlePin = async (id: string, type: 'folder' | 'doc', currentlyPinned: boolean) => {
     const pinned = !currentlyPinned
+    setPanelFolder(null)
+    start()
     if (type === 'doc') {
       setDocs(prev => prev.map(d => d.id === id ? { ...d, pinned } : d))
       await fetch(`/api/documents/${id}`, {
@@ -107,6 +111,7 @@ export function HomeDashboard({ initialFolders, initialDocs }: Props) {
         body: JSON.stringify({ pinned }),
       })
     }
+    done()
   }
 
   type Item = { kind: 'folder' | 'doc'; id: string; updatedAt: string; createdAt: string; name: string; pinned: boolean }
