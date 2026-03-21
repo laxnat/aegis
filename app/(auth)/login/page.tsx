@@ -73,7 +73,7 @@ export default function LoginPage() {
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.55, ease: EASE }}
-        className="relative z-10 w-full max-w-sm bg-tertiary border border-primary/20 px-10 py-10"
+        className="relative z-10 w-full max-w-sm bg-tertiary border border-primary/20 px-10 py-10 rounded-2xl"
       >
         {/* Logo */}
         <Link href="/" className="block font-display text-5xl text-white text-center mb-2">
@@ -94,7 +94,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           {error && (
-            <div className="border border-red-500/50 bg-red-500/10 text-red-400 px-4 py-3 font-ui text-sm tracking-wide">
+            <div className="border border-red-500/50 bg-red-500/10 text-red-400 px-4 py-3 font-ui text-sm tracking-wide rounded-xl">
               {error}
             </div>
           )}
@@ -109,7 +109,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+              className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors rounded-xl"
             />
           </div>
 
@@ -123,24 +123,16 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+              className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors rounded-xl"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="relative w-full font-display text-xl text-secondary bg-highlight py-3 tracking-widest overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            className="w-full font-display text-xl text-secondary bg-highlight hover:bg-primary hover:text-white py-3 tracking-widest transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2 rounded-xl"
           >
-            <span className="relative z-10">{loading ? 'LOADING...' : 'LOG IN'}</span>
-            {!loading && (
-              <>
-                <span className="absolute inset-0 bg-primary translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
-                <span className="absolute inset-0 flex items-center justify-center font-display text-xl text-white translate-x-full group-hover:translate-x-0 transition-transform duration-300 z-20 tracking-widest">
-                  LOG IN
-                </span>
-              </>
-            )}
+            {loading ? 'LOADING...' : 'LOG IN'}
           </button>
         </form>
 
