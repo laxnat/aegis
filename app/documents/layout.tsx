@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { PrismaClient } from '@prisma/client'
 import { Sidebar } from '../components/sidebar'
 import { NavButtons } from '../components/nav-buttons'
+import { LoadingBarProvider } from '../components/loading-bar'
 
 const prisma = new PrismaClient()
 
@@ -32,20 +33,22 @@ export default async function DocumentsLayout({
   ])
 
   return (
-    <div className="flex h-screen">
-      <Sidebar
-        documents={documents}
-        folders={folders}
-        userEmail={user.email || ''}
-      />
-      <main className="flex-1 flex flex-col overflow-hidden bg-secondary">
-        <div className="sticky top-0 z-10 shrink-0">
-          <NavButtons />
-        </div>
-        <div className="flex-1 overflow-auto">
-          {children}
-        </div>
-      </main>
-    </div>
+    <LoadingBarProvider>
+      <div className="flex h-screen">
+        <Sidebar
+          documents={documents}
+          folders={folders}
+          userEmail={user.email || ''}
+        />
+        <main className="flex-1 flex flex-col overflow-hidden bg-secondary">
+          <div className="sticky top-0 z-10 shrink-0">
+            <NavButtons />
+          </div>
+          <div className="flex-1 overflow-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    </LoadingBarProvider>
   )
 }
