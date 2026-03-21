@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -31,12 +31,18 @@ export async function PATCH(
     }
   }
 
-  const block = await prisma.block.update({
-    where: { id: blockId },
-    data: { content },
-  })
-
-  return NextResponse.json(block)
+  try {
+    const block = await prisma.block.update({
+      where: { id: blockId },
+      data: { content },
+    })
+    return NextResponse.json(block)
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+    throw e
+  }
 }
 
 export async function DELETE(
@@ -65,9 +71,13 @@ export async function DELETE(
     }
   }
 
-  await prisma.block.delete({
-    where: { id: blockId },
-  })
+  try {
+    await prisma.block.delete({ where: { id: blockId } })
+  } catch (e) {
+    if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025')) {
+      throw e
+    }
+  }
 
   return NextResponse.json({ success: true })
 }
