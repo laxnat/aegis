@@ -1,7 +1,6 @@
 'use client'
 
 import { useEditor, EditorContent, Editor } from '@tiptap/react'
-import { Extension } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import TaskList from '@tiptap/extension-task-list'
@@ -11,7 +10,7 @@ import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Type, Heading1, Heading2, Heading3, Heading4,
   List, ListOrdered, ListChecks,
@@ -230,29 +229,6 @@ export function BlockEditor({
   useEffect(() => { activeIndexRef.current = activeIndex }, [activeIndex])
   useEffect(() => { onEnterRef.current = onEnter }, [onEnter])
 
-  // Custom extension that intercepts Enter before StarterKit's handlers
-  const enterExtension = useMemo(() => Extension.create({
-    name: 'blockEnter',
-    priority: 10000,
-    addKeyboardShortcuts() {
-      return {
-        Enter: ({ editor }) => {
-          if (showCommandsRef.current) return false
-          let content: string | undefined
-          if (editor.isActive('heading', { level: 1 })) content = '<h1></h1>'
-          else if (editor.isActive('heading', { level: 2 })) content = '<h2></h2>'
-          else if (editor.isActive('heading', { level: 3 })) content = '<h3></h3>'
-          else if (editor.isActive('heading', { level: 4 })) content = '<h4></h4>'
-          else if (editor.isActive('bulletList')) content = '<ul><li><p></p></li></ul>'
-          else if (editor.isActive('orderedList')) content = '<ol><li><p></p></li></ol>'
-          else if (editor.isActive('taskList')) content = '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><p></p></li></ul>'
-          onEnterRef.current(content)
-          return true
-        },
-      }
-    },
-  }), []) // eslint-disable-line react-hooks/exhaustive-deps
-
   const applyCommand = (cmd: SlashCommand) => {
     const ed = editorRef.current
     if (!ed) return
@@ -305,7 +281,6 @@ export function BlockEditor({
     immediatelyRender: false,
     editable: !readOnly,
     extensions: [
-      enterExtension,
       StarterKit,
       Underline,
       TaskList,
@@ -367,6 +342,43 @@ export function BlockEditor({
       attributes: {
         class: 'prose max-w-none focus:outline-none min-h-[1.5rem] px-2 py-0.5',
       },
+      handleDOMEvents: {
+        keydown: (_view, event) => {
+          if (event.key !== 'Enter' || event.shiftKey) return false
+          event.preventDefault()
+          if (showCommandsRef.current) {
+            const cmd = filteredRef.current[activeIndexRef.current]
+            if (cmd) {
+              const ed = editorRef.current!
+              const { $head } = ed.state.selection
+              const from = $head.pos - $head.parentOffset
+              ed.chain().deleteRange({ from, to: $head.pos }).run()
+              setShowCommands(false)
+              showCommandsRef.current = false
+              setCommandQuery('')
+              if (cmd.id === 'table') {
+                setPickerHover({ rows: 3, cols: 3 })
+                setShowTablePicker(true)
+              } else {
+                cmd.action(ed)
+              }
+            }
+            return true
+          }
+          const ed = editorRef.current
+          if (!ed) return true
+          let content: string | undefined
+          if (ed.isActive('heading', { level: 1 })) content = '<h1></h1>'
+          else if (ed.isActive('heading', { level: 2 })) content = '<h2></h2>'
+          else if (ed.isActive('heading', { level: 3 })) content = '<h3></h3>'
+          else if (ed.isActive('heading', { level: 4 })) content = '<h4></h4>'
+          else if (ed.isActive('bulletList')) content = '<ul><li><p></p></li></ul>'
+          else if (ed.isActive('orderedList')) content = '<ol><li><p></p></li></ol>'
+          else if (ed.isActive('taskList')) content = '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><p></p></li></ul>'
+          onEnterRef.current(content)
+          return true
+        },
+      },
       handleKeyDown: (_view, event) => {
         // Command menu navigation
         if (showCommandsRef.current) {
@@ -384,21 +396,6 @@ export function BlockEditor({
             const next = Math.max(activeIndexRef.current - 1, 0)
             activeIndexRef.current = next
             setActiveIndex(next)
-            return true
-          }
-          if (event.key === 'Enter') {
-            event.preventDefault()
-            const cmd = filteredRef.current[activeIndexRef.current]
-            if (cmd) {
-              const ed = editorRef.current!
-              const { $head } = ed.state.selection
-              const from = $head.pos - $head.parentOffset
-              ed.chain().deleteRange({ from, to: $head.pos }).run()
-              cmd.action(ed)
-              setShowCommands(false)
-              showCommandsRef.current = false
-              setCommandQuery('')
-            }
             return true
           }
           if (event.key === 'Escape') {
