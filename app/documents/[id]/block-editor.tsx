@@ -2,7 +2,6 @@
 
 import { useEditor, EditorContent, Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 import Highlight from '@tiptap/extension-highlight'
@@ -18,7 +17,6 @@ import {
 } from 'lucide-react'
 
 type BlockEditorProps = {
-  blockId: string
   initialContent: string
   blockType: string
   onEnter: (initialContent?: string) => void
@@ -26,6 +24,9 @@ type BlockEditorProps = {
   onUpdate: (content: string) => void
   focusPosition?: 'start' | 'end'
   onFocused?: () => void
+  onEditorReady?: (editor: Editor) => void
+  isSelected?: boolean
+  onSelect?: (shiftKey: boolean) => void
   readOnly?: boolean
 }
 
@@ -149,7 +150,19 @@ const COMMANDS: SlashCommand[] = [
     icon: <Minus size={15} />,
     keywords: ['divider', 'hr', 'rule', 'separator', 'line'],
     group: 'Blocks',
-    action: e => e.chain().focus().setHorizontalRule().run(),
+    action: e => e.chain()
+      .focus()
+      .setHorizontalRule()
+      .command(({ state, dispatch }) => {
+        // setHorizontalRule appends an empty paragraph for cursor positioning;
+        // in our block model we don't want it
+        const last = state.doc.lastChild
+        if (last?.type.name === 'paragraph' && last.nodeSize === 2) {
+          if (dispatch) dispatch(state.tr.delete(state.doc.content.size - 2, state.doc.content.size))
+        }
+        return true
+      })
+      .run(),
   },
   // Inline
   {
@@ -191,7 +204,6 @@ function filterCommands(query: string): SlashCommand[] {
 }
 
 export function BlockEditor({
-  blockId,
   initialContent,
   blockType,
   onEnter,
@@ -199,6 +211,9 @@ export function BlockEditor({
   onUpdate,
   focusPosition,
   onFocused,
+  onEditorReady,
+  isSelected = false,
+  onSelect,
   readOnly = false,
 }: BlockEditorProps) {
   const [showToolbar, setShowToolbar] = useState(false)
@@ -281,8 +296,7 @@ export function BlockEditor({
     immediatelyRender: false,
     editable: !readOnly,
     extensions: [
-      StarterKit,
-      Underline,
+      StarterKit.configure({ trailingNode: false }),
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight,
@@ -345,11 +359,19 @@ export function BlockEditor({
       handleDOMEvents: {
         keydown: (_view, event) => {
           if (event.key !== 'Enter' || event.shiftKey) return false
+
+          const ed = editorRef.current
+          if (!ed) return false
+
+          // Let TipTap's keymap handle Enter inside ordered lists so that
+          // list items stay in one block and numbers increment correctly.
+          // The beforeinput capture listener still runs to prevent double-processing.
+          if (ed.isActive('orderedList')) return false
+
           event.preventDefault()
           if (showCommandsRef.current) {
             const cmd = filteredRef.current[activeIndexRef.current]
             if (cmd) {
-              const ed = editorRef.current!
               const { $head } = ed.state.selection
               const from = $head.pos - $head.parentOffset
               ed.chain().deleteRange({ from, to: $head.pos }).run()
@@ -365,15 +387,12 @@ export function BlockEditor({
             }
             return true
           }
-          const ed = editorRef.current
-          if (!ed) return true
           let content: string | undefined
           if (ed.isActive('heading', { level: 1 })) content = '<h1></h1>'
           else if (ed.isActive('heading', { level: 2 })) content = '<h2></h2>'
           else if (ed.isActive('heading', { level: 3 })) content = '<h3></h3>'
           else if (ed.isActive('heading', { level: 4 })) content = '<h4></h4>'
           else if (ed.isActive('bulletList')) content = '<ul><li><p></p></li></ul>'
-          else if (ed.isActive('orderedList')) content = '<ol><li><p></p></li></ol>'
           else if (ed.isActive('taskList')) content = '<ul data-type="taskList"><li data-type="taskItem" data-checked="false"><p></p></li></ul>'
           onEnterRef.current(content)
           return true
@@ -433,6 +452,26 @@ export function BlockEditor({
 
   useEffect(() => { editorRef.current = editor }, [editor])
 
+  // Intercept beforeinput on document in the capture phase.
+  // This is the earliest possible point — guaranteed to fire before ProseMirror's
+  // listener on the editor element, regardless of when the editor mounts.
+  // We filter to only events targeting this editor's contenteditable.
+  useEffect(() => {
+    if (!editor) return
+    onEditorReady?.(editor)
+    const editorDom = editor.view.dom
+    const handler = (e: Event) => {
+      const ie = e as InputEvent
+      if (ie.inputType !== 'insertParagraph') return
+      const target = ie.target as Node | null
+      if (!target || !editorDom.contains(target) && editorDom !== target) return
+      ie.preventDefault()
+      ie.stopImmediatePropagation()
+    }
+    document.addEventListener('beforeinput', handler, { capture: true })
+    return () => document.removeEventListener('beforeinput', handler, { capture: true })
+  }, [editor])
+
   useEffect(() => {
     if (!editor) return
     const handleFocus = () => { setIsUserFocused(true); onFocused?.() }
@@ -487,11 +526,29 @@ export function BlockEditor({
         </div>
       )}
 
-      <div className="group relative rounded transition-colors">
+      <div className={`group relative rounded transition-colors ${isSelected ? 'bg-primary/10' : ''}`}>
         {/* Drag handle */}
         <div className="absolute -left-10 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 h-full">
-          <button className="text-white/20 hover:text-white/50 cursor-grab p-1 font-ui text-base">⋮⋮</button>
-          <button className="text-white/20 hover:text-white/50 p-1 font-ui text-base">+</button>
+          <div className="relative group/drag">
+            <button
+              className="text-white/20 hover:text-white/50 cursor-grab p-1 font-ui text-base"
+              onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onSelect?.(e.shiftKey) }}
+            >⋮⋮</button>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/drag:block pointer-events-none z-50">
+              <div className="bg-tertiary border border-white/10 rounded-lg px-2.5 py-1.5 shadow-xl whitespace-nowrap">
+                <p className="font-ui text-sm text-white/70">Click to select block</p>
+                <p className="font-ui text-sm text-white/40">Shift+click to select range</p>
+              </div>
+            </div>
+          </div>
+          <div className="relative group/add">
+            <button className="text-white/20 hover:text-white/50 p-1 font-ui text-base">+</button>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/add:block pointer-events-none z-50">
+              <div className="bg-tertiary border border-white/10 rounded-lg px-2.5 py-1.5 shadow-xl whitespace-nowrap">
+                <p className="font-ui text-sm text-white/70">Add block below</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <EditorContent editor={editor} />
