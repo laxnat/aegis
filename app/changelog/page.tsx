@@ -9,6 +9,21 @@ type Entry = {
 
 const CHANGELOG: Entry[] = [
   {
+    version: '0.6.0',
+    date: 'March 24, 2026',
+    tag: 'new',
+    changes: [
+      'Added block-level selection — click the drag handle to select a block, Shift+click to select a range',
+      'Delete or Backspace removes all selected blocks at once',
+      'Added tooltips on block drag handle and add button explaining available actions',
+      'Added Table slash command with grid size picker (up to 8×8)',
+      'Extended slash command menu with grouped sections and more block types (To-do List, Quote, Code Block, Divider, Inline Code, Strikethrough, Highlight)',
+      'Fixed extra blank line appearing inside heading, list, quote, code block, and divider blocks',
+      'Fixed numbered list items all showing "1." — items now increment correctly within a block',
+      'Shared editors (edit permission) can now create, update, and delete blocks',
+    ],
+  },
+  {
     version: '0.5.0',
     date: 'March 15, 2026',
     tag: 'new',
