@@ -4,10 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { UserPlus, X, ChevronDown, Eye, Pencil } from 'lucide-react'
 
+type Profile = { fullName: string | null; avatarUrl: string | null }
+
 type Share = {
   id: string
   sharedEmail: string
   permission: string
+  profile: Profile
 }
 
 type Props = {
@@ -16,10 +19,26 @@ type Props = {
   knownOwnerEmail?: string
 }
 
+function Avatar({ email, profile, size = 7 }: { email: string; profile: Profile; size?: number }) {
+  const label = profile.fullName || email
+  const initial = label[0].toUpperCase()
+  const dim = `w-${size} h-${size}`
+  return (
+    <div className={`${dim} rounded-full overflow-hidden bg-white/10 flex items-center justify-center shrink-0`}>
+      {profile.avatarUrl ? (
+        <img src={profile.avatarUrl} alt={label} className="w-full h-full object-cover" />
+      ) : (
+        <span className="font-ui text-xs text-white/50">{initial}</span>
+      )}
+    </div>
+  )
+}
+
 export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Props) {
   const [open, setOpen] = useState(false)
   const [shares, setShares] = useState<Share[]>([])
   const [ownerEmail, setOwnerEmail] = useState<string | null>(knownOwnerEmail ?? null)
+  const [ownerProfile, setOwnerProfile] = useState<Profile>({ fullName: null, avatarUrl: null })
   const [email, setEmail] = useState('')
   const [permission, setPermission] = useState<'view' | 'edit'>('view')
   const [loading, setLoading] = useState(false)
@@ -27,7 +46,6 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!open) return
     fetch(`/api/documents/${documentId}/shares`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -35,17 +53,16 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
         if (Array.isArray(data)) { setShares(data); return }
         if (data.shares) setShares(data.shares)
         if (data.ownerEmail) setOwnerEmail(data.ownerEmail)
+        if (data.ownerProfile) setOwnerProfile(data.ownerProfile)
       })
       .catch(() => {})
-  }, [open, documentId])
+  }, [documentId])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       const target = e.target as HTMLElement
       if (target.closest('[data-share-dropdown]')) return
-      if (panelRef.current && !panelRef.current.contains(target)) {
-        setOpen(false)
-      }
+      if (panelRef.current && !panelRef.current.contains(target)) setOpen(false)
     }
     if (open) document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -62,29 +79,24 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
     })
     const data = await res.json()
     setLoading(false)
-    if (!res.ok) {
-      setError(data.error || 'Failed to share')
-      return
-    }
+    if (!res.ok) { setError(data.error || 'Failed to share'); return }
     setShares(prev => {
       const filtered = prev.filter(s => s.id !== data.id)
-      return [...filtered, data]
+      return [...filtered, { ...data, profile: { fullName: null, avatarUrl: null } }]
     })
     setEmail('')
   }
 
   async function updatePermission(shareId: string, newPermission: 'view' | 'edit') {
     const prev = shares.find(s => s.id === shareId)
-    // Optimistic update
-    setShares(current => current.map(s => s.id === shareId ? { ...s, permission: newPermission } : s))
+    setShares(cur => cur.map(s => s.id === shareId ? { ...s, permission: newPermission } : s))
     const res = await fetch(`/api/documents/${documentId}/shares/${shareId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ permission: newPermission }),
     })
     if (!res.ok && prev) {
-      // Rollback on failure
-      setShares(current => current.map(s => s.id === shareId ? { ...s, permission: prev.permission } : s))
+      setShares(cur => cur.map(s => s.id === shareId ? { ...s, permission: prev.permission } : s))
     }
   }
 
@@ -93,19 +105,72 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
     setShares(prev => prev.filter(s => s.id !== shareId))
   }
 
+  const ownerDisplayName = ownerProfile.fullName || ownerEmail || 'Document Owner'
+
+  const allParticipants = [
+    { email: ownerEmail ?? '', profile: ownerProfile, label: 'owner' },
+    ...shares.map(s => ({ email: s.sharedEmail, profile: s.profile, label: s.permission })),
+  ].filter(p => p.email)
+
+  const [tooltip, setTooltip] = useState<{ participant: typeof allParticipants[0]; x: number; y: number } | null>(null)
+
   return (
-    <div className="relative" ref={panelRef}>
+    <div className="relative flex items-center gap-2" ref={panelRef}>
+      {/* Participant avatars */}
+      {allParticipants.length > 0 && (
+        <div className="flex items-center">
+          {allParticipants.slice(0, 5).map((p, i) => {
+            const displayName = p.profile.fullName || p.email
+            return (
+              <div
+                key={p.email}
+                style={{ marginLeft: i === 0 ? 0 : 4, position: 'relative' }}
+                onMouseEnter={e => {
+                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                  setTooltip({ participant: p, x: rect.left + rect.width / 2, y: rect.top })
+                }}
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <div className="w-7 h-7 rounded-full overflow-hidden bg-white/10 border-2 border-secondary flex items-center justify-center cursor-default">
+                  {p.profile.avatarUrl ? (
+                    <img src={p.profile.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-ui text-xs text-white/60">{displayName[0].toUpperCase()}</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+          {allParticipants.length > 5 && (
+            <div className="w-7 h-7 rounded-full bg-white/10 border border-white/10 flex items-center justify-center font-ui text-xs text-white/50" style={{ marginLeft: 4 }}>
+              +{allParticipants.length - 5}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Avatar tooltip portal */}
+      {tooltip && typeof window !== 'undefined' && createPortal(
+        <div
+          style={{ position: 'fixed', top: tooltip.y - 8, left: tooltip.x, transform: 'translate(-50%, -100%)', zIndex: 9999, pointerEvents: 'none' }}
+          className="whitespace-nowrap"
+        >
+          <div className="bg-tertiary border border-white/10 rounded-lg px-2.5 py-1.5 shadow-xl">
+            <p className="font-ui text-xs text-white">{tooltip.participant.profile.fullName || tooltip.participant.email}</p>
+            {tooltip.participant.profile.fullName && (
+              <p className="font-ui text-xs text-white/40">{tooltip.participant.email}</p>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
       <button
         onClick={() => setOpen(v => !v)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white transition-colors font-ui text-sm"
       >
         <UserPlus size={14} />
         <span>Share</span>
-        {shares.length > 0 && (
-          <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-ui">
-            {shares.length}
-          </span>
-        )}
       </button>
 
       {open && (
@@ -147,29 +212,31 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
           <div className="max-h-52 overflow-y-auto">
             {/* Owner row */}
             <div className="flex items-center gap-3 px-4 py-2.5">
-              <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                <span className="font-ui text-xs text-primary">
-                  {ownerEmail ? ownerEmail[0].toUpperCase() : '?'}
-                </span>
+              <Avatar email={ownerEmail ?? '?'} profile={ownerProfile} />
+              <div className="flex-1 min-w-0">
+                <p className="font-ui text-sm text-white/80 truncate">{ownerDisplayName}</p>
+                {ownerProfile.fullName && ownerEmail && (
+                  <p className="font-ui text-xs text-white/30 truncate">{ownerEmail}</p>
+                )}
               </div>
-              <span className="flex-1 font-ui text-sm text-white/70 truncate">
-                {ownerEmail ?? 'Document Owner'}
-              </span>
-              <span className="font-ui text-xs px-2 py-0.5 rounded-md border text-primary border-primary/20 bg-primary/10">
+              <span className="font-ui text-xs px-2 py-0.5 rounded-md border text-primary border-primary/20 bg-primary/10 shrink-0">
                 owner
               </span>
             </div>
 
             {shares.length > 0 && <div className="mx-4 border-t border-white/5" />}
 
-            {shares.map(share => (
+            {shares.map(share => {
+              const displayName = share.profile.fullName || share.sharedEmail
+              return (
                 <div key={share.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/3 group">
-                  <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                    <span className="font-ui text-xs text-white/50">
-                      {share.sharedEmail[0].toUpperCase()}
-                    </span>
+                  <Avatar email={share.sharedEmail} profile={share.profile} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-ui text-sm text-white/70 truncate">{displayName}</p>
+                    {share.profile.fullName && (
+                      <p className="font-ui text-xs text-white/30 truncate">{share.sharedEmail}</p>
+                    )}
                   </div>
-                  <span className="flex-1 font-ui text-sm text-white/70 truncate">{share.sharedEmail}</span>
                   {isOwner ? (
                     <>
                       <PermissionToggle
@@ -184,12 +251,13 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
                       </button>
                     </>
                   ) : (
-                    <span className={`font-ui text-xs px-2 py-0.5 rounded-md border ${share.permission === 'edit' ? 'text-primary border-primary/20 bg-primary/10' : 'text-white/40 border-white/10 bg-white/5'}`}>
+                    <span className={`font-ui text-xs px-2 py-0.5 rounded-md border shrink-0 ${share.permission === 'edit' ? 'text-primary border-primary/20 bg-primary/10' : 'text-white/40 border-white/10 bg-white/5'}`}>
                       {share.permission}
                     </span>
                   )}
                 </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -200,11 +268,9 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
 function PermissionToggle({
   value,
   onChange,
-  compact = false,
 }: {
   value: 'view' | 'edit'
   onChange: (v: 'view' | 'edit') => void
-  compact?: boolean
 }) {
   const [dropOpen, setDropOpen] = useState(false)
   const [pos, setPos] = useState({ top: 0, left: 0 })
@@ -237,14 +303,8 @@ function PermissionToggle({
         onClick={openDrop}
         className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
       >
-        {value === 'view' ? (
-          <Eye size={12} className="text-white/50" />
-        ) : (
-          <Pencil size={12} className="text-primary" />
-        )}
-        {!compact && (
-          <span className="font-ui text-xs text-white/60 capitalize">{value}</span>
-        )}
+        {value === 'view' ? <Eye size={12} className="text-white/50" /> : <Pencil size={12} className="text-primary" />}
+        <span className="font-ui text-xs text-white/60 capitalize">{value}</span>
         <ChevronDown size={10} className="text-white/30" />
       </button>
 
