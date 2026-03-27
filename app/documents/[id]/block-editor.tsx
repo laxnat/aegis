@@ -528,10 +528,10 @@ export function BlockEditor({
 
       <div className={`group relative rounded transition-colors ${isSelected ? 'bg-primary/10' : ''}`}>
         {/* Drag handle */}
-        <div className="absolute -left-10 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 h-full">
+        <div className="absolute -left-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 h-full">
           <div className="relative group/drag">
             <button
-              className="text-white/20 hover:text-white/50 cursor-grab p-1 font-ui text-base"
+              className="text-white hover:bg-white/20 rounded-md cursor-grab p-1 font-ui text-xl"
               onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onSelect?.(e.shiftKey) }}
             >⋮⋮</button>
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/drag:block pointer-events-none z-50">
@@ -542,7 +542,7 @@ export function BlockEditor({
             </div>
           </div>
           <div className="relative group/add">
-            <button className="text-white/20 hover:text-white/50 p-1 font-ui text-base">+</button>
+            <button className="text-white hover:bg-white/20 rounded-md p-1 font-ui text-2xl leading-none">+</button>
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/add:block pointer-events-none z-50">
               <div className="bg-tertiary border border-white/10 rounded-lg px-2.5 py-1.5 shadow-xl whitespace-nowrap">
                 <p className="font-ui text-sm text-white/70">Add block below</p>
