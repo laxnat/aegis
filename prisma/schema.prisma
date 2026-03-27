@@ -33,6 +33,7 @@ model Document {
   folderId  String?
   pinned    Boolean         @default(false)
   status    String?
+  content   String?         // TipTap HTML — used as initial content for Liveblocks rooms
   folder    Folder?         @relation(fields: [folderId], references: [id], onDelete: SetNull)
   blocks    Block[]
   shares    DocumentShare[]
@@ -55,6 +56,14 @@ model DocumentShare {
   @@unique([documentId, sharedEmail])
   @@index([documentId])
   @@index([sharedEmail])
+}
+
+model UserProfile {
+  id        String   @id  // matches Supabase auth user.id
+  fullName  String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Block {
