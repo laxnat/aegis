@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 
@@ -13,8 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
+const supabase = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,9 +24,21 @@ export default function LoginPage() {
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else {
-      router.push('/documents')
+      return
     }
+
+    // Strip any data URLs from user_metadata before redirecting.
+    // Data URLs stored as avatar_url bloat the JWT cookie and cause 431 errors.
+    const { data: { user } } = await supabase.auth.getUser()
+    const meta = user?.user_metadata ?? {}
+    const dirtyKeys = Object.keys(meta).filter(k => typeof meta[k] === 'string' && (meta[k] as string).startsWith('data:'))
+    if (dirtyKeys.length > 0) {
+      const nulled = Object.fromEntries(dirtyKeys.map(k => [k, null]))
+      await supabase.auth.updateUser({ data: nulled })
+      await supabase.auth.refreshSession()
+    }
+
+    window.location.href = '/documents'
   }
 
   return (
