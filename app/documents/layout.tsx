@@ -34,7 +34,7 @@ export default async function DocumentsLayout({
 
   return (
     <LoadingBarProvider>
-      <div className="flex h-screen">
+      <div className="flex h-screen overflow-hidden">
         <Sidebar
           documents={documents}
           folders={folders}

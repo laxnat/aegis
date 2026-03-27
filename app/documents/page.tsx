@@ -73,10 +73,16 @@ export default async function DocumentsPage() {
     status: d.status,
   }))
 
+  const sharedDocData = sharedWithMe.map(s => ({
+    id: s.document.id,
+    title: s.document.title,
+    updatedAt: s.document.updatedAt.toISOString(),
+  }))
+
   return (
     <div className="p-8 pt-6">
       <div className="max-w-4xl mx-auto">
-        <HomeDashboard initialFolders={folderData} initialDocs={docData} />
+        <HomeDashboard initialFolders={folderData} initialDocs={docData} sharedDocs={sharedDocData} />
       </div>
     </div>
   )

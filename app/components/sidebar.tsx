@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { DocumentMenu } from './document-menu'
 import { SearchPalette } from './search-palette'
+import { ProfilePanel } from './profile-panel'
 import { createPortal } from 'react-dom'
 
 type FolderData = {
@@ -129,7 +130,9 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
 
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const avatarBtnRef = useRef<HTMLButtonElement>(null)
 
   const [folders, setFolders] = useState(initFolders)
   const [docs, setDocs] = useState(initDocs)
@@ -146,6 +149,15 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
   const dragItem = useRef<{ id: string; type: 'folder' | 'doc' } | null>(null)
 
   const [searchOpen, setSearchOpen] = useState(false)
+  const [showProfilePanel, setShowProfilePanel] = useState(false)
+  const [profile, setProfile] = useState<{ fullName: string | null; avatarUrl: string | null } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/user/profile')
+      .then(r => r.ok ? r.json() : null)
+      .then(p => { if (p) setProfile(p) })
+      .catch(() => {})
+  }, [])
 
   // Sync with server-refreshed props
   useEffect(() => { setFolders(initFolders) }, [initFolders])
@@ -156,14 +168,16 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
   }, [renamingId])
 
   useEffect(() => {
+    if (!showDropdown) return
     function handleOut(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowDropdown(false)
-      }
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+        avatarBtnRef.current && !avatarBtnRef.current.contains(e.target as Node)
+      ) setShowDropdown(false)
     }
     document.addEventListener('mousedown', handleOut)
     return () => document.removeEventListener('mousedown', handleOut)
-  }, [])
+  }, [showDropdown])
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -429,30 +443,60 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
         <Link href="/" className="font-display text-6xl text-white hover:text-primary transition-colors">
           aegis
         </Link>
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative">
           <button
-            onClick={() => setShowDropdown(v => !v)}
-            className="flex items-center gap-1.5"
+            ref={avatarBtnRef}
+            onClick={() => {
+              if (!showDropdown && avatarBtnRef.current) {
+                const r = avatarBtnRef.current.getBoundingClientRect()
+                setDropdownPos({ top: r.bottom + 4, left: r.left })
+              }
+              setShowDropdown(v => !v)
+            }}
+            className="flex items-center gap-1.5 group/avatar"
             title={userEmail}
           >
-            <div className="w-10 h-10 bg-primary/20 border border-primary/40 rounded-full flex items-center justify-center text-primary font-display text-lg">
-              {userEmail[0].toUpperCase()}
+            <div className="w-10 h-10 bg-primary/20 border border-primary/40 group-hover/avatar:border-primary/70 group-hover/avatar:bg-primary/30 rounded-full overflow-hidden flex items-center justify-center text-primary font-display text-lg transition-colors">
+              {profile?.avatarUrl
+                ? <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                : (profile?.fullName || userEmail)[0].toUpperCase()
+              }
             </div>
-            <ChevronDown size={15} className={`text-white/30 transition-transform ${showDropdown ? 'rotate-180' : ''}`} />
+            <ChevronDown size={15} className={`text-white/30 group-hover/avatar:text-white/60 transition-all ${showDropdown ? 'rotate-180' : ''}`} />
           </button>
-          {showDropdown && (
-            <div className="absolute top-full right-0 mt-2 w-52 bg-secondary border border-white/10 shadow-xl z-50 py-1">
-              <p className="px-3 py-2 font-ui text-lg text-white/40 truncate border-b border-white/5">
-                {userEmail}
+          {showDropdown && typeof window !== 'undefined' && createPortal(
+            <div
+              ref={dropdownRef}
+              style={{ top: dropdownPos.top, left: dropdownPos.left }}
+              className="fixed w-52 bg-tertiary rounded-xl border border-white/10 shadow-xl z-9999 p-1.5"
+            >
+              <p className="px-3 py-1 font-ui text-base text-white/35 truncate">
+                {profile?.fullName || userEmail}
               </p>
+              <div className="my-1 border-t border-white/5" />
+              <button
+                onClick={() => { setShowProfilePanel(true); setShowDropdown(false) }}
+                className="w-full flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left"
+              >
+                Update Profile
+              </button>
+              <div className="my-1 border-t border-white/5" />
               <button
                 onClick={() => { handleLogout(); setShowDropdown(false) }}
-                className="w-full flex items-center gap-2 px-3 py-2 font-ui text-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors text-left"
+                className="w-full flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left"
               >
                 <LogOut size={15} />
                 Log out
               </button>
-            </div>
+            </div>,
+            document.body
+          )}
+          {showProfilePanel && (
+            <ProfilePanel
+              userEmail={userEmail}
+              onClose={() => setShowProfilePanel(false)}
+              onSaved={setProfile}
+            />
           )}
         </div>
       </div>
@@ -515,6 +559,7 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
           )}
         </div>
       </div>
+
 
       <SearchPalette
         folders={folders}

@@ -25,9 +25,12 @@ type FolderData = {
   subFolders: SubFolderData[]
 }
 
+type SharedDocData = { id: string; title: string; updatedAt: string }
+
 type Props = {
   initialFolders: FolderData[]
   initialDocs: DocData[]
+  sharedDocs: SharedDocData[]
 }
 
 type SortKey = 'updated' | 'name' | 'created'
@@ -50,7 +53,7 @@ function relativeTime(dateStr: string): string {
 
 const PANEL_WIDTH = 224 // w-56
 
-export function HomeDashboard({ initialFolders, initialDocs }: Props) {
+export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props) {
   const router = useRouter()
   const { start, done } = useLoadingBar()
   const [folders, setFolders] = useState(initialFolders)
@@ -380,6 +383,34 @@ export function HomeDashboard({ initialFolders, initialDocs }: Props) {
               </div>
             </>
           )}
+        </div>
+      )}
+
+      {/* Shared to You */}
+      {sharedDocs.length > 0 && (
+        <div className="mt-12">
+          <p className="font-ui text-sm text-white/20 tracking-widest uppercase mb-3">Shared to You</p>
+          <div className={gridClass}>
+            {sharedDocs.map(doc => (
+              <Link
+                key={doc.id}
+                href={`/documents/${doc.id}`}
+                className={view === 'grid'
+                  ? 'flex flex-col gap-1 p-3 bg-tertiary border border-white/8 rounded-xl hover:border-white/15 transition-colors'
+                  : 'flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors'
+                }
+              >
+                <FileText size={view === 'grid' ? 16 : 13} className="text-primary/40 shrink-0" />
+                <span className="font-ui text-lg text-white truncate">{doc.title || 'Untitled'}</span>
+                {view === 'grid' && (
+                  <span className="font-ui text-sm text-white/25 mt-auto">{relativeTime(doc.updatedAt)}</span>
+                )}
+                {view === 'list' && (
+                  <span className="font-ui text-sm text-white/25 ml-auto shrink-0">{relativeTime(doc.updatedAt)}</span>
+                )}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
