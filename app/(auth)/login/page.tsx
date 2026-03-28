@@ -12,7 +12,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-const supabase = createClient()
+  const [forgotMode, setForgotMode] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+  const supabase = createClient()
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    setLoading(false)
+    if (error) { setError(error.message); return }
+    setResetSent(true)
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -99,52 +113,112 @@ const supabase = createClient()
         />
 
         <h1 className="font-display text-4xl text-white tracking-widest text-center mb-8">
-          LOG IN
+          {forgotMode ? 'RESET' : 'LOG IN'}
         </h1>
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          {error && (
-            <div className="border border-red-500/50 bg-red-500/10 text-red-400 px-4 py-3 font-ui text-sm tracking-wide rounded-xl">
-              {error}
+        {forgotMode ? (
+          resetSent ? (
+            <div className="space-y-5">
+              <div className="border border-primary/30 bg-primary/10 text-primary px-4 py-3 font-ui text-sm tracking-wide rounded-xl text-center">
+                Check your email for a password reset link.
+              </div>
+              <button
+                onClick={() => { setForgotMode(false); setResetSent(false) }}
+                className="w-full font-display text-xl text-secondary bg-highlight hover:bg-primary hover:text-white py-3 tracking-widest transition-colors duration-200 rounded-xl"
+              >
+                BACK TO LOGIN
+              </button>
             </div>
-          )}
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              {error && (
+                <div className="border border-red-500/50 bg-red-500/10 text-red-400 px-4 py-3 font-ui text-sm tracking-wide rounded-xl">
+                  {error}
+                </div>
+              )}
+              <div className="space-y-1">
+                <label htmlFor="email" className="font-ui text-xs text-primary tracking-[0.2em] uppercase">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors rounded-xl"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full font-display text-xl text-secondary bg-highlight hover:bg-primary hover:text-white py-3 tracking-widest transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
+              >
+                {loading ? 'SENDING...' : 'SEND RESET LINK'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setForgotMode(false); setError(null) }}
+                className="w-full font-ui text-sm text-white/40 hover:text-white/70 transition-colors"
+              >
+                Back to login
+              </button>
+            </form>
+          )
+        ) : (
+          <form onSubmit={handleLogin} className="space-y-5">
+            {error && (
+              <div className="border border-red-500/50 bg-red-500/10 text-red-400 px-4 py-3 font-ui text-sm tracking-wide rounded-xl">
+                {error}
+              </div>
+            )}
 
-          <div className="space-y-1">
-            <label htmlFor="email" className="font-ui text-xs text-primary tracking-[0.2em] uppercase">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors rounded-xl"
-            />
-          </div>
+            <div className="space-y-1">
+              <label htmlFor="email" className="font-ui text-xs text-primary tracking-[0.2em] uppercase">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors rounded-xl"
+              />
+            </div>
 
-          <div className="space-y-1">
-            <label htmlFor="password" className="font-ui text-xs text-primary tracking-[0.2em] uppercase">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors rounded-xl"
-            />
-          </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="font-ui text-xs text-primary tracking-[0.2em] uppercase">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => { setForgotMode(true); setError(null) }}
+                  className="font-ui text-xs text-white/40 hover:text-white/70 transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full bg-tertiary border border-primary/30 text-white font-ui px-4 py-3 focus:outline-none focus:border-primary transition-colors rounded-xl"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full font-display text-xl text-secondary bg-highlight hover:bg-primary hover:text-white py-3 tracking-widest transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2 rounded-xl"
-          >
-            {loading ? 'LOADING...' : 'LOG IN'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full font-display text-xl text-secondary bg-highlight hover:bg-primary hover:text-white py-3 tracking-widest transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2 rounded-xl"
+            >
+              {loading ? 'LOADING...' : 'LOG IN'}
+            </button>
+          </form>
+        )}
 
         <p className="mt-6 text-center font-ui text-sm text-accent/60">
           No account?{' '}
