@@ -15,6 +15,7 @@ import { yCursorPlugin } from '@tiptap/y-tiptap'
 import * as Y from 'yjs'
 import { LiveblocksYjsProvider } from '@liveblocks/yjs'
 import { RoomProvider, useRoom, useSelf } from '@/lib/liveblocks'
+import { createClient as createSupabaseClient } from '@/lib/supabase/client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Type, Heading1, Heading2, Heading3, Heading4,
@@ -148,11 +149,19 @@ function TipTapEditor({ documentId, initialContent, readOnly, doc, provider }: E
   const isKeyboardNavRef = useRef(false)
   const suppressSlashRef = useRef(false)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const channelRef = useRef<ReturnType<ReturnType<typeof createSupabaseClient>['channel']> | null>(null)
+  const pendingRemoteRef = useRef<string | null>(null)
+  const lastLocalChangeRef = useRef<number>(0)
+  const myIdRef = useRef<string>(Math.random().toString(36).slice(2))
 
   useEffect(() => { showCommandsRef.current = showCommands }, [showCommands])
   useEffect(() => { activeIndexRef.current = activeIndex }, [activeIndex])
 
   useEffect(() => {
+    // Fire immediately if the provider already finished syncing before this effect ran
+    if (provider.getStatus() === 'synchronized') {
+      setSynced(true)
+    }
     const onSync = (s: boolean) => { if (s) setSynced(true) }
     provider.on('sync', onSync)
     return () => { provider.off('sync', onSync) }
@@ -199,6 +208,40 @@ function TipTapEditor({ documentId, initialContent, readOnly, doc, provider }: E
     const el = commandListRef.current?.children[activeIndex] as HTMLElement | undefined
     el?.scrollIntoView({ block: 'nearest' })
   }, [activeIndex])
+
+  // Supabase Realtime: broadcast content changes to other users
+  useEffect(() => {
+    if (readOnly) return
+    const supabase = createSupabaseClient()
+    const channel = supabase.channel(`doc:${documentId}`)
+    channelRef.current = channel
+    channel
+      .on('broadcast', { event: 'content' }, ({ payload }: { payload: { senderId: string; content: string } }) => {
+        if (payload.senderId === myIdRef.current) return
+        pendingRemoteRef.current = payload.content
+      })
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+      channelRef.current = null
+    }
+  }, [documentId, readOnly])
+
+  // Apply buffered remote content after 1 s of local typing inactivity
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (pendingRemoteRef.current === null) return
+      const ed = editorRef.current
+      if (!ed) return
+      if (Date.now() - lastLocalChangeRef.current < 1000) return
+      const remote = pendingRemoteRef.current
+      pendingRemoteRef.current = null
+      if (remote !== ed.getHTML()) {
+        ed.commands.setContent(remote, { emitUpdate: false })
+      }
+    }, 500)
+    return () => clearInterval(interval)
+  }, [])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -275,12 +318,11 @@ function TipTapEditor({ documentId, initialContent, readOnly, doc, provider }: E
 
   useEffect(() => { editorRef.current = editor }, [editor])
 
-  // Set initial content once Yjs syncs, if the doc is empty
+  // Set initial content once Yjs syncs, if the editor has no meaningful content
   useEffect(() => {
     if (!synced || !editor || !initialContent) return
-    const fragment = doc.getXmlFragment('default')
-    if (fragment.length === 0) editor.commands.setContent(initialContent)
-  }, [synced, editor, initialContent, doc])
+    if (editor.isEmpty) editor.commands.setContent(initialContent)
+  }, [synced, editor, initialContent])
 
   const filteredCommands = filterCommands(commandQuery)
   const grouped = filteredCommands.reduce<Record<string, SlashCommand[]>>((acc, cmd) => {
