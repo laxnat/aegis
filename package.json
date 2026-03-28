@@ -13,6 +13,7 @@
     "@liveblocks/client": "^3.15.5",
     "@liveblocks/node": "^3.15.5",
     "@liveblocks/react": "^3.15.5",
+    "@liveblocks/react-tiptap": "^3.15.5",
     "@liveblocks/yjs": "^3.15.5",
     "@prisma/client": "^6.19.2",
     "@supabase/ssr": "^0.8.0",
