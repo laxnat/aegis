@@ -190,7 +190,7 @@ export function ProfilePanel({ userEmail, onClose, onSaved }: ProfilePanelProps)
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full px-3 py-1.5 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full py-1.5 rounded-lg bg-highlight text-secondary font-display text-sm tracking-widest hover:bg-primary hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {saving ? 'Saving…' : 'Update Profile'}
               </button>

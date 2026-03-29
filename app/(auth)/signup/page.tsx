@@ -76,7 +76,7 @@ export default function SignUpPage() {
         className="relative z-10 w-full max-w-sm bg-tertiary border border-primary/20 px-10 py-10 rounded-2xl"
       >
         {/* Logo */}
-        <Link href="/" className="block font-display text-5xl text-white text-center mb-2">
+        <Link href="/" className="block font-display text-5xl text-white hover:text-primary transition-colors text-center mb-2">
           aegis
         </Link>
 

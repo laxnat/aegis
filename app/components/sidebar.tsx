@@ -423,6 +423,19 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
         <Link href="/documents" className="p-5 text-white/40 hover:text-white transition-colors" title="Home">
           <House size={16} />
         </Link>
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="p-5 text-white/40 hover:text-white transition-colors"
+          title="Search (⌘K)"
+        >
+          <Search size={16} />
+        </button>
+        <SearchPalette
+          folders={folders}
+          docs={docs}
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+        />
       </div>
     )
   }
