@@ -28,7 +28,7 @@ export function DocumentListItem({ id, title, relativeTime }: Props) {
             {title}
           </span>
         </div>
-        <span className="font-ui text-sm text-white/30 shrink-0 ml-4 group-hover:text-primary/60 transition-colors">
+        <span className="font-ui text-sm text-white/50 shrink-0 ml-4 group-hover:text-primary/60 transition-colors">
           {relativeTime}
         </span>
       </Link>

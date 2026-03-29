@@ -68,7 +68,7 @@ export function DocCard({ id, title, relativeTime, pinned, onPin, view = 'grid',
         <p className="font-ui text-xl text-white truncate group-hover:text-primary transition-colors">{title}</p>
         {statusBadge && <div>{statusBadge}</div>}
         <div className="mt-auto flex items-end justify-between gap-2">
-          <p className="font-ui text-sm text-white/20">{relativeTime}</p>
+          <p className="font-ui text-sm text-white/40">{relativeTime}</p>
           {onPin && (
             <button
               onClick={e => { e.preventDefault(); e.stopPropagation(); onPin() }}

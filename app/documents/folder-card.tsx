@@ -132,8 +132,8 @@ export function FolderCard({ id, name, docCount, relativeTime, pinned, onPin, vi
             {name}
           </Link>
         )}
-        <p className="font-ui text-sm text-white/20 shrink-0">{relativeTime}</p>
-        <p className="font-ui text-sm text-white/30 shrink-0">{docCount}</p>
+        <p className="font-ui text-sm text-white/40 shrink-0">{relativeTime}</p>
+        <p className="font-ui text-sm text-white/50 shrink-0">{docCount}</p>
         <div className={`transition-opacity ${menuOpen ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100'}`}>
           <button
             ref={btnRef}
@@ -179,7 +179,7 @@ export function FolderCard({ id, name, docCount, relativeTime, pinned, onPin, vi
           <p className="font-ui text-xl text-white truncate">{name}</p>
         )}
         <div className="mt-auto flex items-end justify-between gap-2">
-          <p className="font-ui text-sm text-white/20">{relativeTime}</p>
+          <p className="font-ui text-sm text-white/40">{relativeTime}</p>
           <div className="flex items-center gap-1.5">
             {onPin && (
               <button
@@ -190,7 +190,7 @@ export function FolderCard({ id, name, docCount, relativeTime, pinned, onPin, vi
                 <Star size={12} className={pinned ? 'fill-highlight' : ''} />
               </button>
             )}
-            <p className="font-ui text-sm text-white/30 shrink-0">{docCount}</p>
+            <p className="font-ui text-sm text-white/50 shrink-0">{docCount} files</p>
           </div>
         </div>
       </Link>
