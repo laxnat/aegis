@@ -339,7 +339,7 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
           {/* Recently viewed */}
           {recentlyViewed.length > 0 && (
             <>
-              <p className="font-ui text-sm text-white/20 tracking-widest uppercase mb-3">Recently Viewed</p>
+              <p className="font-ui text-sm text-white/40 tracking-widest uppercase mb-3">Recently Viewed</p>
               <div className="flex gap-2 overflow-x-auto pb-2 mb-8" style={{ scrollbarWidth: 'none' }}>
                 {recentlyViewed.slice(0, 8).map(item => {
                   const liveTitle = item.type === 'doc'
@@ -365,7 +365,7 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
           {/* Pinned section */}
           {pinned.length > 0 && (
             <>
-              <p className="font-ui text-sm text-white/20 tracking-widest uppercase mb-3">Pinned</p>
+              <p className="font-ui text-sm text-white/40 tracking-widest uppercase mb-3">Pinned</p>
               <div className={`${gridClass} mb-8`}>
                 {pinned.map(renderItem)}
               </div>
@@ -375,7 +375,7 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
           {/* All / remaining items */}
           {unpinned.length > 0 && (
             <>
-              <p className="font-ui text-sm text-white/20 tracking-widest uppercase mb-3">
+              <p className="font-ui text-sm text-white/40 tracking-widest uppercase mb-3">
                 {pinned.length > 0 ? 'All' : 'Last updated'}
               </p>
               <div className={gridClass}>
@@ -387,32 +387,28 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
       )}
 
       {/* Shared to You */}
-      {sharedDocs.length > 0 && (
-        <div className="mt-12">
-          <p className="font-ui text-sm text-white/20 tracking-widest uppercase mb-3">Shared to You</p>
-          <div className={gridClass}>
-            {sharedDocs.map(doc => (
-              <Link
-                key={doc.id}
-                href={`/documents/${doc.id}`}
-                className={view === 'grid'
-                  ? 'flex flex-col gap-1 p-3 bg-tertiary border border-white/8 rounded-xl hover:border-white/15 transition-colors'
-                  : 'flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors'
-                }
-              >
-                <FileText size={view === 'grid' ? 16 : 13} className="text-primary/40 shrink-0" />
-                <span className="font-ui text-lg text-white truncate">{doc.title || 'Untitled'}</span>
-                {view === 'grid' && (
-                  <span className="font-ui text-sm text-white/25 mt-auto">{relativeTime(doc.updatedAt)}</span>
-                )}
-                {view === 'list' && (
-                  <span className="font-ui text-sm text-white/25 ml-auto shrink-0">{relativeTime(doc.updatedAt)}</span>
-                )}
-              </Link>
-            ))}
+      {filter !== 'folders' && sharedDocs.length > 0 && (() => {
+        const sortedShared = [...sharedDocs].sort((a, b) => {
+          if (sort === 'name') return (a.title || '').localeCompare(b.title || '')
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        })
+        return (
+          <div className="mt-12">
+            <p className="font-ui text-sm text-white/40 tracking-widest uppercase mb-3">Shared to You</p>
+            <div className={gridClass}>
+              {sortedShared.map(doc => (
+                <DocCard
+                  key={doc.id}
+                  id={doc.id}
+                  title={doc.title || 'Untitled'}
+                  relativeTime={relativeTime(doc.updatedAt)}
+                  view={view}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Folder hover panel */}
       {panelFolder && typeof window !== 'undefined' && createPortal(
@@ -447,7 +443,7 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
                     <div className="flex items-center gap-2 px-3 py-1 font-ui text-lg text-primary/60 rounded-lg mx-1 bg-white/5">
                       <Folder size={13} className="text-primary/50 shrink-0" />
                       <span className="flex-1 truncate">{pendingFolder.name}</span>
-                      <span className="text-white/25 text-sm shrink-0">{pendingFolder.docCount}</span>
+                      <span className="text-white/40 text-sm shrink-0">{pendingFolder.docCount}</span>
                     </div>
                   )}
                   {panelFolder.subFolders.map(sf => (
@@ -456,7 +452,7 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
                     >
                       <Folder size={13} className="text-primary/50 shrink-0" />
                       <span className="flex-1 truncate">{sf.name}</span>
-                      <span className="text-white/25 text-sm shrink-0">{sf.docCount}</span>
+                      <span className="text-white/40 text-sm shrink-0">{sf.docCount}</span>
                     </Link>
                   ))}
                   {(panelFolder.subFolders.length > 0 || pendingFolder) && (panelFolder.documents.length > 0 || pendingDoc) && (
