@@ -12,11 +12,13 @@ type Props = {
   relativeTime: string
   pinned?: boolean
   onPin?: () => void
+  onDelete?: () => void
+  onStatusChange?: (status: string | null) => void
   view?: 'grid' | 'list'
   status?: string | null
 }
 
-export function DocCard({ id, title, relativeTime, pinned, onPin, view = 'grid', status }: Props) {
+export function DocCard({ id, title, relativeTime, pinned, onPin, onDelete, onStatusChange, view = 'grid', status }: Props) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const statusCfg = getStatusConfig(status)
@@ -50,7 +52,8 @@ export function DocCard({ id, title, relativeTime, pinned, onPin, view = 'grid',
             documentId={id}
             title={title}
             status={status}
-            afterDelete={() => router.refresh()}
+            afterDelete={onDelete ?? (() => router.refresh())}
+            onStatusChange={onStatusChange}
             onOpenChange={setMenuOpen}
           />
         </div>
@@ -66,9 +69,11 @@ export function DocCard({ id, title, relativeTime, pinned, onPin, view = 'grid',
       >
         <FileText size={28} className="text-primary/40 shrink-0 group-hover:text-primary/70 transition-colors" />
         <p className="font-ui text-xl text-white truncate group-hover:text-primary transition-colors">{title}</p>
-        {statusBadge && <div>{statusBadge}</div>}
         <div className="mt-auto flex items-end justify-between gap-2">
-          <p className="font-ui text-sm text-white/40">{relativeTime}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-ui text-sm text-white/40">{relativeTime}</p>
+            {statusBadge}
+          </div>
           {onPin && (
             <button
               onClick={e => { e.preventDefault(); e.stopPropagation(); onPin() }}
@@ -86,7 +91,8 @@ export function DocCard({ id, title, relativeTime, pinned, onPin, view = 'grid',
           documentId={id}
           title={title}
           status={status}
-          afterDelete={() => router.refresh()}
+          afterDelete={onDelete ?? (() => router.refresh())}
+            onStatusChange={onStatusChange}
           onOpenChange={setMenuOpen}
         />
       </div>

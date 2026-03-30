@@ -22,10 +22,11 @@ type DocumentMenuProps = {
   title: string
   status?: string | null
   afterDelete?: () => void
+  onStatusChange?: (status: string | null) => void
   onOpenChange?: (open: boolean) => void
 }
 
-export function DocumentMenu({ documentId, title, status, afterDelete, onOpenChange }: DocumentMenuProps) {
+export function DocumentMenu({ documentId, title, status, afterDelete, onStatusChange, onOpenChange }: DocumentMenuProps) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<'menu' | 'rename' | 'status'>('menu')
   const [renameValue, setRenameValue] = useState(title)
@@ -112,12 +113,12 @@ export function DocumentMenu({ documentId, title, status, afterDelete, onOpenCha
     e.preventDefault()
     e.stopPropagation()
     setOpenWithCallback(false)
+    onStatusChange?.(newStatus)
     await fetch(`/api/documents/${documentId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),
     })
-    router.refresh()
   }
 
   const btnClass = 'w-full flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left'

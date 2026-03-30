@@ -11,7 +11,7 @@ export default async function DocumentsPage() {
 
   if (!user) redirect('/login')
 
-  const [folders, documents, sharedWithMe] = await Promise.all([
+  const [folders, documents, sharedWithMe, sharedPins] = await Promise.all([
     prisma.folder.findMany({
       where: { userId: user.id, parentId: null },
       orderBy: { updatedAt: 'desc' },
@@ -38,6 +38,10 @@ export default async function DocumentsPage() {
       include: {
         document: { select: { id: true, title: true, updatedAt: true } },
       },
+    }),
+    prisma.documentPin.findMany({
+      where: { userId: user.id },
+      select: { documentId: true },
     }),
   ])
 
@@ -73,14 +77,17 @@ export default async function DocumentsPage() {
     status: d.status,
   }))
 
+  const pinnedSharedIds = new Set(sharedPins.map((p: { documentId: string }) => p.documentId))
+
   const sharedDocData = sharedWithMe.map(s => ({
     id: s.document.id,
     title: s.document.title,
     updatedAt: s.document.updatedAt.toISOString(),
+    pinned: pinnedSharedIds.has(s.document.id),
   }))
 
   return (
-    <div className="p-8 pt-6">
+    <div className="p-8 pt-6 pb-64">
       <div className="max-w-4xl mx-auto">
         <HomeDashboard initialFolders={folderData} initialDocs={docData} sharedDocs={sharedDocData} />
       </div>

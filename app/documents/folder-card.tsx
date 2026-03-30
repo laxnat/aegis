@@ -13,10 +13,11 @@ type Props = {
   relativeTime: string
   pinned?: boolean
   onPin?: () => void
+  onDelete?: () => void
   view?: 'grid' | 'list'
 }
 
-export function FolderCard({ id, name, docCount, relativeTime, pinned, onPin, view = 'grid' }: Props) {
+export function FolderCard({ id, name, docCount, relativeTime, pinned, onPin, onDelete, view = 'grid' }: Props) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [renaming, setRenaming] = useState(false)
@@ -69,7 +70,8 @@ export function FolderCard({ id, name, docCount, relativeTime, pinned, onPin, vi
     e.stopPropagation()
     setMenuOpen(false)
     await fetch(`/api/folders/${id}`, { method: 'DELETE' })
-    router.refresh()
+    if (onDelete) onDelete()
+    else router.refresh()
   }
 
   const btnCls = 'w-full flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left'

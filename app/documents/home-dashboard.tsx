@@ -25,7 +25,7 @@ type FolderData = {
   subFolders: SubFolderData[]
 }
 
-type SharedDocData = { id: string; title: string; updatedAt: string }
+type SharedDocData = { id: string; title: string; updatedAt: string; pinned: boolean }
 
 type Props = {
   initialFolders: FolderData[]
@@ -58,6 +58,7 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
   const { start, done } = useLoadingBar()
   const [folders, setFolders] = useState(initialFolders)
   const [docs, setDocs] = useState(initialDocs)
+  const [sharedDocsState, setSharedDocsState] = useState(sharedDocs)
   const [sort, setSort] = useState<SortKey>('updated')
   const [filter, setFilter] = useState<FilterKey>('all')
   const [view, setView] = useState<ViewKey>('grid')
@@ -93,6 +94,16 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
 
   const cancelClose = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
+  }
+
+  const handleSharedPin = async (id: string, currentlyPinned: boolean) => {
+    const pinned = !currentlyPinned
+    setSharedDocsState(prev => prev.map(d => d.id === id ? { ...d, pinned } : d))
+    start()
+    await fetch(`/api/documents/${id}/pin`, {
+      method: pinned ? 'POST' : 'DELETE',
+    })
+    done()
   }
 
   const handlePin = async (id: string, type: 'folder' | 'doc', currentlyPinned: boolean) => {
@@ -211,6 +222,7 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
             relativeTime={relativeTime(folder.updatedAt)}
             pinned={folder.pinned}
             onPin={() => handlePin(folder.id, 'folder', folder.pinned)}
+            onDelete={() => setFolders(prev => prev.filter(f => f.id !== folder.id))}
             view={view}
           />
         </div>
@@ -235,6 +247,8 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
             relativeTime={relativeTime(doc.updatedAt)}
             pinned={doc.pinned}
             onPin={() => handlePin(doc.id, 'doc', doc.pinned)}
+            onDelete={() => setDocs(prev => prev.filter(d => d.id !== doc.id))}
+            onStatusChange={s => setDocs(prev => prev.map(d => d.id === doc.id ? { ...d, status: s } : d))}
             view={view}
             status={doc.status}
           />
@@ -363,11 +377,22 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
           )}
 
           {/* Pinned section */}
-          {pinned.length > 0 && (
+          {(pinned.length > 0 || sharedDocsState.some(d => d.pinned)) && (
             <>
               <p className="font-ui text-sm text-white/40 tracking-widest uppercase mb-3">Pinned</p>
               <div className={`${gridClass} mb-8`}>
                 {pinned.map(renderItem)}
+                {sharedDocsState.filter(d => d.pinned).map(doc => (
+                  <DocCard
+                    key={doc.id}
+                    id={doc.id}
+                    title={doc.title || 'Untitled'}
+                    relativeTime={relativeTime(doc.updatedAt)}
+                    pinned={doc.pinned}
+                    onPin={() => handleSharedPin(doc.id, doc.pinned)}
+                    view={view}
+                  />
+                ))}
               </div>
             </>
           )}
@@ -376,7 +401,7 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
           {unpinned.length > 0 && (
             <>
               <p className="font-ui text-sm text-white/40 tracking-widest uppercase mb-3">
-                {pinned.length > 0 ? 'All' : 'Last updated'}
+                {(pinned.length > 0 || sharedDocsState.some(d => d.pinned)) ? 'All' : 'Last updated'}
               </p>
               <div className={gridClass}>
                 {unpinned.map(renderItem)}
@@ -387,8 +412,9 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
       )}
 
       {/* Shared to You */}
-      {filter !== 'folders' && sharedDocs.length > 0 && (() => {
-        const sortedShared = [...sharedDocs].sort((a, b) => {
+      {filter !== 'folders' && sharedDocsState.length > 0 && (() => {
+        const sortedShared = [...sharedDocsState].sort((a, b) => {
+          if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
           if (sort === 'name') return (a.title || '').localeCompare(b.title || '')
           return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         })
@@ -402,6 +428,8 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
                   id={doc.id}
                   title={doc.title || 'Untitled'}
                   relativeTime={relativeTime(doc.updatedAt)}
+                  pinned={doc.pinned}
+                  onPin={() => handleSharedPin(doc.id, doc.pinned)}
                   view={view}
                 />
               ))}
