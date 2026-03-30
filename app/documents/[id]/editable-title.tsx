@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useDocHeader } from '@/app/components/doc-header'
 
 type EditableTitleProps = {
   initialTitle: string
@@ -13,14 +14,25 @@ export function EditableTitle({ initialTitle, documentId, readOnly = false }: Ed
   const [title, setTitle] = useState(initialTitle)
   const [isEditing, setIsEditing] = useState(false)
   const router = useRouter()
+  const { setTitle: setHeaderTitle, setLastSavedAt } = useDocHeader()
 
   // Sync when the server delivers a new title (e.g. renamed from sidebar)
   useEffect(() => {
     setTitle(initialTitle)
+    setHeaderTitle(initialTitle)
   }, [initialTitle])
+
+  // Clear the nav tab when leaving the document
+  useEffect(() => {
+    return () => {
+      setHeaderTitle(null)
+      setLastSavedAt(null)
+    }
+  }, [])
 
   const handleSave = async () => {
     setIsEditing(false)
+    setHeaderTitle(title)
 
     await fetch(`/api/documents/${documentId}`, {
       method: 'PATCH',
