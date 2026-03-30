@@ -9,14 +9,10 @@ import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
-import { Extension } from '@tiptap/core'
-import Collaboration from '@tiptap/extension-collaboration'
-import { yCursorPlugin } from '@tiptap/y-tiptap'
-import * as Y from 'yjs'
-import { LiveblocksYjsProvider } from '@liveblocks/yjs'
-import { RoomProvider, useRoom, useSelf } from '@/lib/liveblocks'
-import { createClient as createSupabaseClient } from '@/lib/supabase/client'
+import { useLiveblocksExtension } from '@liveblocks/react-tiptap'
+import { LiveblocksProvider, RoomProvider } from '@liveblocks/react'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useDocHeader } from '@/app/components/doc-header'
 import {
   Type, Heading1, Heading2, Heading3, Heading4,
   List, ListOrdered, ListChecks,
@@ -64,8 +60,36 @@ function filterCommands(query: string) {
 function CursorStyles() {
   return (
     <style>{`
-      .collaboration-cursor__caret { border-left: 2px solid; border-right: 2px solid; margin-left: -1px; margin-right: -1px; pointer-events: none; position: relative; word-break: normal; }
-      .collaboration-cursor__label { border-radius: 3px 3px 3px 0; color: #fff; font-size: 11px; font-weight: 600; left: -1px; line-height: normal; padding: 0.1rem 0.3rem; position: absolute; top: -1.4em; user-select: none; white-space: nowrap; pointer-events: none; }
+      .collaboration-carets__caret {
+        border-left: 1px solid;
+        border-right: 1px solid;
+        margin-left: -1px;
+        margin-right: -1px;
+        pointer-events: auto;
+        position: relative;
+        word-break: normal;
+        cursor: text;
+      }
+      .collaboration-carets__label {
+        border-radius: 3px 3px 3px 0;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        left: -1px;
+        line-height: normal;
+        padding: 0.1rem 0.3rem;
+        position: absolute;
+        top: -1.4em;
+        user-select: none;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+        z-index: 50;
+      }
+      .collaboration-carets__caret:hover .collaboration-carets__label {
+        opacity: 1;
+      }
     `}</style>
   )
 }
@@ -76,60 +100,26 @@ type Props = { documentId: string; initialContent: string | null; readOnly?: boo
 
 export function CollaborativeEditor({ documentId, initialContent, readOnly = false }: Props) {
   return (
-    <RoomProvider id={documentId} initialPresence={{}}>
-      <CursorStyles />
-      <RoomEditor documentId={documentId} initialContent={initialContent} readOnly={readOnly} />
-    </RoomProvider>
+    <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
+      <RoomProvider id={documentId}>
+        <CursorStyles />
+        <TipTapEditor documentId={documentId} initialContent={initialContent} readOnly={readOnly} />
+      </RoomProvider>
+    </LiveblocksProvider>
   )
 }
 
-// ─── Sets up Yjs doc + provider, then renders editor ─────────────────────────
-
-function RoomEditor({ documentId, initialContent, readOnly }: Props) {
-  const room = useRoom()
-  const [doc, setDoc] = useState<Y.Doc | null>(null)
-  const [provider, setProvider] = useState<LiveblocksYjsProvider | null>(null)
-
-  useEffect(() => {
-    const yDoc = new Y.Doc()
-    const yProvider = new LiveblocksYjsProvider(room, yDoc)
-    setDoc(yDoc)
-    setProvider(yProvider)
-    return () => {
-      yDoc.destroy()
-      yProvider.destroy()
-    }
-  }, [room])
-
-  if (!doc || !provider) {
-    return <div className="animate-pulse h-6 w-48 bg-white/5 rounded mt-2" />
-  }
-
-  return (
-    <TipTapEditor
-      documentId={documentId}
-      initialContent={initialContent}
-      readOnly={readOnly ?? false}
-      doc={doc}
-      provider={provider}
-    />
-  )
-}
-
-// ─── TipTap editor — only mounts after doc + provider are ready ───────────────
+// ─── TipTap editor ────────────────────────────────────────────────────────────
 
 type EditorProps = {
   documentId: string
   initialContent: string | null
   readOnly: boolean
-  doc: Y.Doc
-  provider: LiveblocksYjsProvider
 }
 
-function TipTapEditor({ documentId, initialContent, readOnly, doc, provider }: EditorProps) {
-  const self = useSelf()
+function TipTapEditor({ documentId, initialContent, readOnly }: EditorProps) {
+  const liveblocks = useLiveblocksExtension()
 
-  const [synced, setSynced] = useState(false)
   const [showCommands, setShowCommands] = useState(false)
   const [commandQuery, setCommandQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
@@ -138,6 +128,8 @@ function TipTapEditor({ documentId, initialContent, readOnly, doc, provider }: E
   const [pickerHover, setPickerHover] = useState({ rows: 3, cols: 3 })
   const [showToolbar, setShowToolbar] = useState(false)
   const [toolbarPos, setToolbarPos] = useState({ top: 0, left: 0 })
+  const [isContentReady, setIsContentReady] = useState(!initialContent)
+  const { setLastSavedAt } = useDocHeader()
 
   const containerRef = useRef<HTMLDivElement>(null)
   const commandListRef = useRef<HTMLDivElement>(null)
@@ -149,31 +141,43 @@ function TipTapEditor({ documentId, initialContent, readOnly, doc, provider }: E
   const isKeyboardNavRef = useRef(false)
   const suppressSlashRef = useRef(false)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const channelRef = useRef<ReturnType<ReturnType<typeof createSupabaseClient>['channel']> | null>(null)
-  const pendingRemoteRef = useRef<string | null>(null)
-  const lastLocalChangeRef = useRef<number>(0)
-  const myIdRef = useRef<string>(Math.random().toString(36).slice(2))
+  const pendingHtmlRef = useRef<string | null>(null)
 
   useEffect(() => { showCommandsRef.current = showCommands }, [showCommands])
   useEffect(() => { activeIndexRef.current = activeIndex }, [activeIndex])
 
+  // Flush any pending save immediately (used on unmount + beforeunload)
   useEffect(() => {
-    // Fire immediately if the provider already finished syncing before this effect ran
-    if (provider.getStatus() === 'synchronized') {
-      setSynced(true)
-    }
-    const onSync = (s: boolean) => { if (s) setSynced(true) }
-    provider.on('sync', onSync)
-    return () => { provider.off('sync', onSync) }
-  }, [provider])
-
-  const saveContent = useCallback((html: string) => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => {
+    const flush = () => {
+      const html = pendingHtmlRef.current
+      if (!html) return
+      if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null }
+      pendingHtmlRef.current = null
       fetch(`/api/documents/${documentId}/content`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: html }),
+        keepalive: true,
+      })
+    }
+    window.addEventListener('beforeunload', flush)
+    return () => { window.removeEventListener('beforeunload', flush); flush() }
+  }, [documentId])
+
+  const saveContent = useCallback((html: string) => {
+    pendingHtmlRef.current = html
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null
+      pendingHtmlRef.current = null
+      console.log('[save] PATCHing content, length:', html.length)
+      fetch(`/api/documents/${documentId}/content`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: html }),
+      }).then(r => {
+        console.log('[save] PATCH response:', r.status)
+        if (r.ok) setLastSavedAt(new Date())
       })
     }, 2000)
   }, [documentId])
@@ -209,39 +213,18 @@ function TipTapEditor({ documentId, initialContent, readOnly, doc, provider }: E
     el?.scrollIntoView({ block: 'nearest' })
   }, [activeIndex])
 
-  // Supabase Realtime: broadcast content changes to other users
+  // Scroll page so the command panel is fully visible when it opens
   useEffect(() => {
-    if (readOnly) return
-    const supabase = createSupabaseClient()
-    const channel = supabase.channel(`doc:${documentId}`)
-    channelRef.current = channel
-    channel
-      .on('broadcast', { event: 'content' }, ({ payload }: { payload: { senderId: string; content: string } }) => {
-        if (payload.senderId === myIdRef.current) return
-        pendingRemoteRef.current = payload.content
-      })
-      .subscribe()
-    return () => {
-      supabase.removeChannel(channel)
-      channelRef.current = null
-    }
-  }, [documentId, readOnly])
+    if (!showCommands) return
+    requestAnimationFrame(() => {
+      const el = commandListRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const overflow = rect.bottom - (window.innerHeight - 16)
+      if (overflow > 0) window.scrollBy({ top: overflow, behavior: 'smooth' })
+    })
+  }, [showCommands])
 
-  // Apply buffered remote content after 1 s of local typing inactivity
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (pendingRemoteRef.current === null) return
-      const ed = editorRef.current
-      if (!ed) return
-      if (Date.now() - lastLocalChangeRef.current < 1000) return
-      const remote = pendingRemoteRef.current
-      pendingRemoteRef.current = null
-      if (remote !== ed.getHTML()) {
-        ed.commands.setContent(remote, { emitUpdate: false })
-      }
-    }, 500)
-    return () => clearInterval(interval)
-  }, [])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -255,18 +238,19 @@ function TipTapEditor({ documentId, initialContent, readOnly, doc, provider }: E
       TableRow,
       TableHeader,
       TableCell,
-      Collaboration.configure({ document: doc }),
-      Extension.create({
-        name: 'collaborationCursor',
-        addProseMirrorPlugins() {
-          const user = { name: self?.info?.name ?? 'Anonymous', color: self?.info?.color ?? '#888' }
-          provider.awareness.setLocalStateField('user', user)
-          return [yCursorPlugin(provider.awareness as any)]
-        },
-      }),
+      liveblocks,
     ],
     onUpdate: ({ editor }) => {
       saveContent(editor.getHTML())
+      // Auto-scroll to keep cursor in view as user types
+      requestAnimationFrame(() => {
+        const { from } = editor.state.selection
+        try {
+          const coords = editor.view.coordsAtPos(from)
+          const overflow = coords.bottom - (window.innerHeight - 80)
+          if (overflow > 0) window.scrollBy({ top: overflow, behavior: 'smooth' })
+        } catch (_) {}
+      })
       const { $head } = editor.state.selection
       const lineText = $head.parent.textContent.slice(0, $head.parentOffset)
       if (lineText.startsWith('/') && !lineText.includes(' ')) {
@@ -318,11 +302,26 @@ function TipTapEditor({ documentId, initialContent, readOnly, doc, provider }: E
 
   useEffect(() => { editorRef.current = editor }, [editor])
 
-  // Set initial content once Yjs syncs, if the editor has no meaningful content
+  // Seed from DB after a short delay to let Yjs apply any server state first.
+  // Wait 2s after editor init to let Yjs apply any server state, then seed from DB if still empty.
   useEffect(() => {
-    if (!synced || !editor || !initialContent) return
-    if (editor.isEmpty) editor.commands.setContent(initialContent)
-  }, [synced, editor, initialContent])
+    if (!editor) return
+    console.log('[sync] editor ready, scheduling seed check | initialContent:', !!initialContent)
+
+    const id = setTimeout(() => {
+      console.log('[sync] timeout fired | editor.isEmpty:', editor.isEmpty, '| html length:', editor.getHTML().length)
+      if (initialContent && editor.isEmpty) {
+        console.log('[sync] SEEDING content from DB')
+        editor.commands.setContent(initialContent)
+      } else if (initialContent) {
+        console.log('[sync] skipped seed — editor already has content')
+      }
+      setIsContentReady(true)
+    }, 2000)
+
+    return () => clearTimeout(id)
+  }, [editor, initialContent])
+
 
   const filteredCommands = filterCommands(commandQuery)
   const grouped = filteredCommands.reduce<Record<string, SlashCommand[]>>((acc, cmd) => {
@@ -406,7 +405,19 @@ function TipTapEditor({ documentId, initialContent, readOnly, doc, provider }: E
         </div>
       )}
 
-      <EditorContent editor={editor} />
+      {!isContentReady && (
+        <div className="animate-pulse space-y-3 px-2 py-1">
+          <div className="h-8 w-2/3 bg-white/5 rounded" />
+          <div className="h-4 w-full bg-white/5 rounded" />
+          <div className="h-4 w-5/6 bg-white/5 rounded" />
+          <div className="h-4 w-4/6 bg-white/5 rounded" />
+          <div className="h-4 w-full bg-white/5 rounded mt-6" />
+          <div className="h-4 w-3/4 bg-white/5 rounded" />
+        </div>
+      )}
+      <div className={isContentReady ? '' : 'hidden'}>
+        <EditorContent editor={editor} />
+      </div>
     </div>
   )
 }

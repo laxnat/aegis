@@ -42,10 +42,13 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
   const [email, setEmail] = useState('')
   const [permission, setPermission] = useState<'view' | 'edit'>('view')
   const [loading, setLoading] = useState(false)
+  const [sharesLoading, setSharesLoading] = useState(true)
+  const [removingId, setRemovingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    setSharesLoading(true)
     fetch(`/api/documents/${documentId}/shares`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -56,6 +59,7 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
         if (data.ownerProfile) setOwnerProfile(data.ownerProfile)
       })
       .catch(() => {})
+      .finally(() => setSharesLoading(false))
   }, [documentId])
 
   useEffect(() => {
@@ -101,8 +105,10 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
   }
 
   async function removeShare(shareId: string) {
+    setRemovingId(shareId)
     await fetch(`/api/documents/${documentId}/shares/${shareId}`, { method: 'DELETE' })
     setShares(prev => prev.filter(s => s.id !== shareId))
+    setRemovingId(null)
   }
 
   const ownerDisplayName = ownerProfile.fullName || ownerEmail || 'Document Owner'
@@ -210,54 +216,73 @@ export function SharePanel({ documentId, isOwner = false, knownOwnerEmail }: Pro
 
           {/* Participants */}
           <div className="max-h-52 overflow-y-auto">
-            {/* Owner row */}
-            <div className="flex items-center gap-3 px-4 py-2.5">
-              <Avatar email={ownerEmail ?? '?'} profile={ownerProfile} />
-              <div className="flex-1 min-w-0">
-                <p className="font-ui text-sm text-white/80 truncate">{ownerDisplayName}</p>
-                {ownerProfile.fullName && ownerEmail && (
-                  <p className="font-ui text-xs text-white/30 truncate">{ownerEmail}</p>
-                )}
+            {/* Skeleton rows while loading */}
+            {sharesLoading && (
+              <div className="animate-pulse px-4 py-2 space-y-3">
+                {[72, 56, 64].map(w => (
+                  <div key={w} className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-full bg-white/8 shrink-0" />
+                    <div className={`h-3 bg-white/8 rounded`} style={{ width: `${w}%` }} />
+                  </div>
+                ))}
               </div>
-              <span className="font-ui text-xs px-2 py-0.5 rounded-md border text-primary border-primary/20 bg-primary/10 shrink-0">
-                owner
-              </span>
-            </div>
+            )}
 
-            {shares.length > 0 && <div className="mx-4 border-t border-white/5" />}
-
-            {shares.map(share => {
-              const displayName = share.profile.fullName || share.sharedEmail
-              return (
-                <div key={share.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/3 group">
-                  <Avatar email={share.sharedEmail} profile={share.profile} />
+            {/* Owner + share rows */}
+            {!sharesLoading && (
+              <>
+                <div className="flex items-center gap-3 px-4 py-2.5">
+                  <Avatar email={ownerEmail ?? '?'} profile={ownerProfile} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-ui text-sm text-white/70 truncate">{displayName}</p>
-                    {share.profile.fullName && (
-                      <p className="font-ui text-xs text-white/30 truncate">{share.sharedEmail}</p>
+                    <p className="font-ui text-sm text-white/80 truncate">{ownerDisplayName}</p>
+                    {ownerProfile.fullName && ownerEmail && (
+                      <p className="font-ui text-xs text-white/30 truncate">{ownerEmail}</p>
                     )}
                   </div>
-                  {isOwner ? (
-                    <>
-                      <PermissionToggle
-                        value={share.permission as 'view' | 'edit'}
-                        onChange={v => updatePermission(share.id, v)}
-                      />
-                      <button
-                        onClick={() => removeShare(share.id)}
-                        className="text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <X size={12} />
-                      </button>
-                    </>
-                  ) : (
-                    <span className={`font-ui text-xs px-2 py-0.5 rounded-md border shrink-0 ${share.permission === 'edit' ? 'text-primary border-primary/20 bg-primary/10' : 'text-white/40 border-white/10 bg-white/5'}`}>
-                      {share.permission}
-                    </span>
-                  )}
+                  <span className="font-ui text-xs px-2 py-0.5 rounded-md border text-primary border-primary/20 bg-primary/10 shrink-0">
+                    owner
+                  </span>
                 </div>
-              )
-            })}
+
+                {shares.length > 0 && <div className="mx-4 border-t border-white/5" />}
+
+                {shares.map(share => {
+                  const displayName = share.profile.fullName || share.sharedEmail
+                  return (
+                    <div key={share.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/3 group">
+                      <Avatar email={share.sharedEmail} profile={share.profile} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-ui text-sm text-white/70 truncate">{displayName}</p>
+                        {share.profile.fullName && (
+                          <p className="font-ui text-xs text-white/30 truncate">{share.sharedEmail}</p>
+                        )}
+                      </div>
+                      {isOwner ? (
+                        <>
+                          <PermissionToggle
+                            value={share.permission as 'view' | 'edit'}
+                            onChange={v => updatePermission(share.id, v)}
+                          />
+                          <button
+                            onClick={() => removeShare(share.id)}
+                            disabled={removingId === share.id}
+                            className="text-white/20 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-100"
+                          >
+                            {removingId === share.id
+                              ? <div className="w-3 h-3 border border-white/30 border-t-white/70 rounded-full animate-spin" />
+                              : <X size={12} />}
+                          </button>
+                        </>
+                      ) : (
+                        <span className={`font-ui text-xs px-2 py-0.5 rounded-md border shrink-0 ${share.permission === 'edit' ? 'text-primary border-primary/20 bg-primary/10' : 'text-white/40 border-white/10 bg-white/5'}`}>
+                          {share.permission}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </>
+            )}
           </div>
         </div>
       )}
