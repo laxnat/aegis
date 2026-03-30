@@ -9,6 +9,21 @@ type Entry = {
 
 const CHANGELOG: Entry[] = [
   {
+    version: '0.7.0',
+    date: 'March 30, 2026',
+    tag: 'new',
+    changes: [
+      'Doc title and "saved X mins ago" now appear in the nav tab while editing — clears automatically on navigation',
+      'Shared documents can now be pinned by non-owners and appear in the Pinned section',
+      'Document status badge moved to sit beside the last-edited time on each card',
+      'Status changes now apply instantly without a page refresh',
+      'Deleting a doc or folder removes it from the dashboard immediately',
+      'Added loading skeleton for the home page during server-side data fetch',
+      'Added loading skeleton for the editor while Liveblocks content syncs',
+      'Share panel shows animated skeleton rows while loading and a spinner when removing a share',
+    ],
+  },
+  {
     version: '0.6.0',
     date: 'March 24, 2026',
     tag: 'new',
