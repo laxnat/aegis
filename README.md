@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aegis
 
-## Getting Started
+A collaborative document workspace with real-time editing, folder organisation, and document sharing.
 
-First, run the development server:
+---
+
+## Screenshots
+
+<!-- Home dashboard -->
+![Home Dashboard](screenshots/home-dashboard.png)
+
+<!-- Document editor -->
+![Document Editor](screenshots/editor.png)
+
+<!-- Share panel -->
+![Share Panel](screenshots/share-panel.png)
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Auth | Supabase (email + Google OAuth) |
+| Database | PostgreSQL via Supabase |
+| ORM | Prisma |
+| Real-time collaboration | Liveblocks v3 |
+| Rich text editor | Tiptap v3 |
+| Animations | Framer Motion |
+| Icons | Lucide React |
+
+---
+
+## Setup
+
+### Prerequisites
+
+- Node.js 18+
+- A [Supabase](https://supabase.com) project
+- A [Liveblocks](https://liveblocks.io) account
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/aegis.git
+cd aegis
+npm install
+```
+
+### 2. Configure environment variables
+
+Create a `.env` file in the root:
+
+```env
+# PostgreSQL — from your Supabase project settings → Database
+DATABASE_URL=
+DIRECT_URL=
+
+# Supabase — from your project settings → API
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+
+# Liveblocks — from your dashboard → API Keys
+LIVEBLOCKS_SECRET_KEY=
+NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY=
+```
+
+### 3. Push the database schema
+
+```bash
+npx prisma db push
+npx prisma generate
+```
+
+### 4. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Features
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Create, rename, and delete documents and folders
+- Nested folder support with breadcrumb navigation
+- Drag-and-drop to move documents into folders
+- Real-time collaborative editing powered by Liveblocks + Tiptap
+- Rich text block editor with slash commands (headings, lists, tables, code blocks, and more)
+- Block-level selection with multi-delete
+- Document sharing with view/edit permissions
+- Document status labels (Draft, In Progress, Review, Done)
+- Pinning for documents, folders, and shared documents
+- Global search palette (⌘K)
+- Recently viewed row on the home dashboard
