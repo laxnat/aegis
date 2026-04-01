@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { MoreHorizontal, Trash2, Pencil, Copy, ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 const STATUSES = [
   { value: null,          label: 'None',        dot: 'bg-white/20',   text: 'text-white/40' },
@@ -80,32 +81,47 @@ export function DocumentMenu({ documentId, title, status, afterDelete, onStatusC
       return
     }
     setOpenWithCallback(false)
-    await fetch(`/api/documents/${documentId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: trimmed }),
-    })
-    router.refresh()
+    try {
+      const res = await fetch(`/api/documents/${documentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: trimmed }),
+      })
+      if (!res.ok) throw new Error()
+      router.refresh()
+    } catch {
+      toast.error('Failed to rename document')
+    }
   }
 
   const handleDuplicate = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setOpenWithCallback(false)
-    await fetch(`/api/documents/${documentId}`, { method: 'POST' })
-    router.refresh()
+    try {
+      const res = await fetch(`/api/documents/${documentId}`, { method: 'POST' })
+      if (!res.ok) throw new Error()
+      router.refresh()
+    } catch {
+      toast.error('Failed to duplicate document')
+    }
   }
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setOpenWithCallback(false)
-    await fetch(`/api/documents/${documentId}`, { method: 'DELETE' })
-    if (afterDelete) {
-      afterDelete()
-    } else {
-      router.push('/documents')
-      router.refresh()
+    try {
+      const res = await fetch(`/api/documents/${documentId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      if (afterDelete) {
+        afterDelete()
+      } else {
+        router.push('/documents')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Failed to delete document')
     }
   }
 
@@ -114,11 +130,16 @@ export function DocumentMenu({ documentId, title, status, afterDelete, onStatusC
     e.stopPropagation()
     setOpenWithCallback(false)
     onStatusChange?.(newStatus)
-    await fetch(`/api/documents/${documentId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    })
+    try {
+      const res = await fetch(`/api/documents/${documentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (!res.ok) throw new Error()
+    } catch {
+      toast.error('Failed to update status')
+    }
   }
 
   const btnClass = 'w-full flex items-center gap-2 px-3 py-1 font-ui text-lg text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left'

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { FolderPlus } from 'lucide-react'
+import { toast } from 'sonner'
 
 export function CreateFolderButton({ parentId }: { parentId?: string } = {}) {
   const router = useRouter()
@@ -10,13 +11,19 @@ export function CreateFolderButton({ parentId }: { parentId?: string } = {}) {
 
   const handleCreate = async () => {
     setLoading(true)
-    await fetch('/api/folders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'New Folder', parentId: parentId ?? null }),
-    })
-    setLoading(false)
-    router.refresh()
+    try {
+      const response = await fetch('/api/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'New Folder', parentId: parentId ?? null }),
+      })
+      if (!response.ok) throw new Error()
+      router.refresh()
+    } catch {
+      toast.error('Failed to create folder')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

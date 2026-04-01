@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDocHeader } from '@/app/components/doc-header'
+import { toast } from 'sonner'
 
 type EditableTitleProps = {
   initialTitle: string
@@ -31,16 +32,22 @@ export function EditableTitle({ initialTitle, documentId, readOnly = false }: Ed
   }, [])
 
   const handleSave = async () => {
+    const previous = initialTitle
     setIsEditing(false)
     setHeaderTitle(title)
-
-    await fetch(`/api/documents/${documentId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title }),
-    })
-
-    router.refresh()
+    try {
+      const response = await fetch(`/api/documents/${documentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      })
+      if (!response.ok) throw new Error()
+      router.refresh()
+    } catch {
+      setTitle(previous)
+      setHeaderTitle(previous)
+      toast.error('Failed to save title')
+    }
   }
 
   if (isEditing) {

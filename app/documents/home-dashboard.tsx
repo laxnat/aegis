@@ -11,6 +11,7 @@ import { DocCard } from './doc-card'
 import { CreateDocumentButton } from './create-document-button'
 import { CreateFolderButton } from './create-folder-button'
 import { useLoadingBar } from '../components/loading-bar'
+import { toast } from 'sonner'
 
 type DocData = { id: string; title: string; updatedAt: string; createdAt: string; pinned: boolean; status: string | null }
 type SubFolderData = { id: string; name: string; docCount: number; updatedAt: string }
@@ -100,32 +101,46 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
     const pinned = !currentlyPinned
     setSharedDocsState(prev => prev.map(d => d.id === id ? { ...d, pinned } : d))
     start()
-    await fetch(`/api/documents/${id}/pin`, {
-      method: pinned ? 'POST' : 'DELETE',
-    })
-    done()
+    try {
+      const res = await fetch(`/api/documents/${id}/pin`, { method: pinned ? 'POST' : 'DELETE' })
+      if (!res.ok) throw new Error()
+    } catch {
+      setSharedDocsState(prev => prev.map(d => d.id === id ? { ...d, pinned: currentlyPinned } : d))
+      toast.error('Failed to update pin')
+    } finally {
+      done()
+    }
   }
 
   const handlePin = async (id: string, type: 'folder' | 'doc', currentlyPinned: boolean) => {
     const pinned = !currentlyPinned
     setPanelFolder(null)
     start()
-    if (type === 'doc') {
-      setDocs(prev => prev.map(d => d.id === id ? { ...d, pinned } : d))
-      await fetch(`/api/documents/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pinned }),
-      })
-    } else {
-      setFolders(prev => prev.map(f => f.id === id ? { ...f, pinned } : f))
-      await fetch(`/api/folders/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pinned }),
-      })
+    try {
+      if (type === 'doc') {
+        setDocs(prev => prev.map(d => d.id === id ? { ...d, pinned } : d))
+        const res = await fetch(`/api/documents/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pinned }),
+        })
+        if (!res.ok) throw new Error()
+      } else {
+        setFolders(prev => prev.map(f => f.id === id ? { ...f, pinned } : f))
+        const res = await fetch(`/api/folders/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pinned }),
+        })
+        if (!res.ok) throw new Error()
+      }
+    } catch {
+      if (type === 'doc') setDocs(prev => prev.map(d => d.id === id ? { ...d, pinned: currentlyPinned } : d))
+      else setFolders(prev => prev.map(f => f.id === id ? { ...f, pinned: currentlyPinned } : f))
+      toast.error('Failed to update pin')
+    } finally {
+      done()
     }
-    done()
   }
 
   type Item = { kind: 'folder' | 'doc'; id: string; updatedAt: string; createdAt: string; name: string; pinned: boolean }
@@ -157,41 +172,48 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
     setDragOver(null)
     if (item.type === 'folder' && item.id === targetFolderId) return
 
-    if (item.type === 'doc') {
-      if (targetFolderId) {
-        const doc = docs.find(d => d.id === item.id)
-        setDocs(prev => prev.filter(d => d.id !== item.id))
-        if (doc && targetFolderId === panelFolder?.id) {
-          setPanelFolder(prev => prev ? {
-            ...prev,
-            documents: [doc, ...prev.documents],
-            docCount: prev.docCount + 1,
-          } : null)
+    try {
+      if (item.type === 'doc') {
+        if (targetFolderId) {
+          const doc = docs.find(d => d.id === item.id)
+          setDocs(prev => prev.filter(d => d.id !== item.id))
+          if (doc && targetFolderId === panelFolder?.id) {
+            setPanelFolder(prev => prev ? {
+              ...prev,
+              documents: [doc, ...prev.documents],
+              docCount: prev.docCount + 1,
+            } : null)
+          }
         }
-      }
-      await fetch(`/api/documents/${item.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderId: targetFolderId }),
-      })
-    } else {
-      if (targetFolderId) {
-        const folder = folders.find(f => f.id === item.id)
-        setFolders(prev => prev.filter(f => f.id !== item.id))
-        if (folder && targetFolderId === panelFolder?.id) {
-          setPanelFolder(prev => prev ? {
-            ...prev,
-            subFolders: [{ id: folder.id, name: folder.name, docCount: folder.docCount, updatedAt: folder.updatedAt }, ...prev.subFolders],
-          } : null)
+        const res = await fetch(`/api/documents/${item.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folderId: targetFolderId }),
+        })
+        if (!res.ok) throw new Error()
+      } else {
+        if (targetFolderId) {
+          const folder = folders.find(f => f.id === item.id)
+          setFolders(prev => prev.filter(f => f.id !== item.id))
+          if (folder && targetFolderId === panelFolder?.id) {
+            setPanelFolder(prev => prev ? {
+              ...prev,
+              subFolders: [{ id: folder.id, name: folder.name, docCount: folder.docCount, updatedAt: folder.updatedAt }, ...prev.subFolders],
+            } : null)
+          }
         }
+        const res = await fetch(`/api/folders/${item.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parentId: targetFolderId }),
+        })
+        if (!res.ok) throw new Error()
       }
-      await fetch(`/api/folders/${item.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parentId: targetFolderId }),
-      })
+      router.refresh()
+    } catch {
+      toast.error('Failed to move item')
+      router.refresh()
     }
-    router.refresh()
   }
 
   const renderItem = (item: Item) => {
@@ -282,9 +304,9 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
   return (
     <>
       {/* Header */}
-      <div className="flex items-end justify-between mb-6">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="font-display text-8xl text-white">Home</h1>
+          <h1 className="font-display text-5xl sm:text-7xl md:text-8xl text-white">Home</h1>
           <p className="font-ui text-base text-primary/60 mt-1 tracking-wide">
             {folders.length > 0 && <span>{folders.length} {folders.length === 1 ? 'folder' : 'folders'}</span>}
             {folders.length > 0 && docs.length > 0 && <span className="mx-2 text-white/20">·</span>}
@@ -300,7 +322,7 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
 
       {/* Controls */}
       {!isEmpty && (
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-y-2 mb-6">
           {/* Sort */}
           <div className="flex items-center gap-1">
             <span className="font-ui text-sm text-white/20 tracking-widest uppercase mr-1">Sort</span>
