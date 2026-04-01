@@ -113,7 +113,7 @@ export function ProfilePanel({ userEmail, onClose, onSaved }: ProfilePanelProps)
     >
       <div
         ref={panelRef}
-        className="w-full max-w-sm bg-secondary border border-white/10 rounded-xl shadow-xl mx-4 overflow-hidden"
+        className="w-full max-w-sm bg-secondary border border-white/10 rounded-xl shadow-xl mx-4 overflow-hidden max-h-[90svh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/8">

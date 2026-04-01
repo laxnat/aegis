@@ -87,7 +87,7 @@ export default async function DocumentsPage() {
   }))
 
   return (
-    <div className="p-8 pt-6 pb-64">
+    <div className="p-4 sm:p-6 md:p-8 pt-4 sm:pt-6 pb-32 md:pb-64">
       <div className="max-w-4xl mx-auto">
         <HomeDashboard initialFolders={folderData} initialDocs={docData} sharedDocs={sharedDocData} />
       </div>

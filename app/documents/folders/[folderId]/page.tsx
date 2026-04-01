@@ -91,11 +91,11 @@ export default async function FolderPage({
   const isEmpty = allItems.length === 0
 
   return (
-    <div className="min-h-screen bg-secondary p-8 pt-6">
+    <div className="min-h-screen bg-secondary p-4 sm:p-6 md:p-8 pt-4 sm:pt-6">
       <div className="max-w-4xl mx-auto">
 
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 font-ui text-lg text-white/30 mb-6">
+        <div className="flex flex-wrap items-center gap-1.5 font-ui text-base text-white/30 mb-6">
           <Link href="/documents" className="hover:text-white transition-colors">Home</Link>
           {breadcrumb.map(ancestor => (
             <Fragment key={ancestor.id}>
@@ -113,10 +113,10 @@ export default async function FolderPage({
         </div>
 
         {/* Header */}
-        <div className="flex items-end justify-between mb-10">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
           <div>
             <RecentlyViewedTracker id={folderId} title={folder.name} type="folder" />
-        <h1 className="font-display text-8xl text-white">{folder.name}</h1>
+            <h1 className="font-display text-5xl sm:text-7xl md:text-8xl text-white">{folder.name}</h1>
             <p className="font-ui text-base text-primary/60 mt-1 tracking-wide">
               {subFolders.length > 0 && (
                 <span>{subFolders.length} {subFolders.length === 1 ? 'folder' : 'folders'}</span>

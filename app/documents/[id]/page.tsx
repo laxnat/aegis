@@ -65,7 +65,7 @@ export default async function DocumentPage({
     ?? (document.blocks.length > 0 ? blocksToHtml(document.blocks) : null)
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 md:p-8">
       <RecentlyViewedTracker id={document.id} title={document.title} type="doc" />
       <div className="max-w-4xl mx-auto">
         {/* Top bar */}
