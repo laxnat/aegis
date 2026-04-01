@@ -9,6 +9,19 @@ type Entry = {
 
 const CHANGELOG: Entry[] = [
   {
+    version: '0.8.0',
+    date: 'April 1, 2026',
+    tag: 'improvement',
+    changes: [
+      'Login and sign up pages now use the animated network canvas background',
+      'Marketing nav shown on login and sign up pages',
+      'Graceful error toast notifications on all async operations (create, rename, delete, move, pin)',
+      'Optimistic updates now revert correctly if a request fails',
+      'Added error boundaries for app-level and documents-level failures with styled recovery UI',
+      'Pinning feature card on the landing page animates stars onto all documents on hover',
+    ],
+  },
+  {
     version: '0.7.0',
     date: 'March 30, 2026',
     tag: 'new',
@@ -119,10 +132,10 @@ export default function ChangelogPage() {
     <div className="min-h-screen bg-secondary text-white">
       <MarketingNav />
 
-      <div className="max-w-2xl mx-auto px-8 pt-32 pb-24">
+      <div className="max-w-2xl mx-auto px-4 sm:px-8 pt-24 sm:pt-32 pb-12 sm:pb-24">
         {/* Header */}
         <p className="font-ui text-sm text-primary tracking-[0.5em] uppercase mb-4">What&apos;s new</p>
-        <h1 className="font-display text-8xl text-white mb-2">CHANGELOG</h1>
+        <h1 className="font-display text-5xl sm:text-7xl md:text-8xl text-white mb-2">CHANGELOG</h1>
         <div className="h-1.5 w-32 bg-highlight mb-10" />
         <p className="font-ui text-lg text-white/40 mb-16">
           Every release, every fix, every feature — tracked here.
