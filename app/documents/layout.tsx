@@ -5,6 +5,7 @@ import { Sidebar } from '../components/sidebar'
 import { NavButtons } from '../components/nav-buttons'
 import { LoadingBarProvider } from '../components/loading-bar'
 import { DocHeaderProvider } from '../components/doc-header'
+import { SidebarProvider } from '../components/sidebar-context'
 
 const prisma = new PrismaClient()
 
@@ -35,6 +36,7 @@ export default async function DocumentsLayout({
 
   return (
     <LoadingBarProvider>
+      <SidebarProvider>
       <DocHeaderProvider>
         <div className="flex h-screen overflow-hidden">
           <Sidebar
@@ -52,6 +54,7 @@ export default async function DocumentsLayout({
           </main>
         </div>
       </DocHeaderProvider>
+      </SidebarProvider>
     </LoadingBarProvider>
   )
 }

@@ -1,9 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Menu } from 'lucide-react'
 import { useDocHeader } from './doc-header'
 import { useEffect, useState } from 'react'
+import { useSidebarMobile } from './sidebar-context'
 
 function formatSaved(date: Date) {
   const mins = Math.floor((Date.now() - date.getTime()) / 60_000)
@@ -15,6 +16,7 @@ function formatSaved(date: Date) {
 export function NavButtons() {
   const router = useRouter()
   const { title, lastSavedAt } = useDocHeader()
+  const { toggle } = useSidebarMobile()
   const [, tick] = useState(0)
 
   // Re-render every 30s so the relative time stays fresh
@@ -25,6 +27,13 @@ export function NavButtons() {
 
   return (
     <div className="flex items-center gap-1 px-2 py-1.5 bg-tertiary border-b border-white/5">
+      <button
+        onClick={toggle}
+        className="md:hidden p-1.5 hover:bg-white/8 text-white/50 hover:text-white rounded transition-colors mr-1"
+        title="Toggle sidebar"
+      >
+        <Menu size={16} />
+      </button>
       <button
         onClick={() => { router.back(); router.refresh() }}
         className="p-1.5 hover:bg-white/8 text-white/50 hover:text-white rounded transition-colors"

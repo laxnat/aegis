@@ -13,7 +13,9 @@ import { useRouter } from 'next/navigation'
 import { DocumentMenu } from './document-menu'
 import { SearchPalette } from './search-palette'
 import { ProfilePanel } from './profile-panel'
+import { toast } from 'sonner'
 import { createPortal } from 'react-dom'
+import { useSidebarMobile } from './sidebar-context'
 
 type FolderData = {
   id: string
@@ -127,6 +129,10 @@ function FolderMenu({
 export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const { open: mobileOpen, close: closeMobile } = useSidebarMobile()
+
+  // Close mobile drawer on navigation
+  useEffect(() => { closeMobile() }, [pathname])
 
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
@@ -205,16 +211,21 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
   }
 
   const createFolder = async (parentId: string | null = null) => {
-    const res = await fetch('/api/folders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'New Folder', parentId }),
-    })
-    const newFolder: FolderData = await res.json()
-    setFolders(prev => [...prev, newFolder])
-    if (parentId) setExpanded(prev => new Set([...prev, parentId]))
-    setRenamingId(newFolder.id)
-    setRenameVal('New Folder')
+    try {
+      const res = await fetch('/api/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'New Folder', parentId }),
+      })
+      if (!res.ok) throw new Error()
+      const newFolder: FolderData = await res.json()
+      setFolders(prev => [...prev, newFolder])
+      if (parentId) setExpanded(prev => new Set([...prev, parentId]))
+      setRenamingId(newFolder.id)
+      setRenameVal('New Folder')
+    } catch {
+      toast.error('Failed to create folder')
+    }
   }
 
   const saveRename = async (id: string) => {
@@ -223,18 +234,32 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
     setRenamingId(null)
     if (!trimmed || trimmed === folder?.name) return
     setFolders(prev => prev.map(f => f.id === id ? { ...f, name: trimmed } : f))
-    await fetch(`/api/folders/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: trimmed }),
-    })
+    try {
+      const res = await fetch(`/api/folders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      })
+      if (!res.ok) throw new Error()
+    } catch {
+      setFolders(prev => prev.map(f => f.id === id ? { ...f, name: folder?.name ?? f.name } : f))
+      toast.error('Failed to rename folder')
+    }
   }
 
   const deleteFolder = async (id: string) => {
+    const snapshot = { folders: [...folders], docs: [...docs] }
     setFolders(prev => prev.filter(f => f.id !== id))
     setDocs(prev => prev.map(d => d.folderId === id ? { ...d, folderId: null } : d))
-    await fetch(`/api/folders/${id}`, { method: 'DELETE' })
-    router.refresh()
+    try {
+      const res = await fetch(`/api/folders/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      router.refresh()
+    } catch {
+      setFolders(snapshot.folders)
+      setDocs(snapshot.docs)
+      toast.error('Failed to delete folder')
+    }
   }
 
   // Drag & Drop
@@ -268,27 +293,34 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
       if (isDescendantOrSelf(folders, item.id, targetFolderId)) return
     }
 
-    if (item.type === 'doc') {
-      const doc = docs.find(d => d.id === item.id)
-      if (doc?.folderId === targetFolderId) return
-      setDocs(prev => prev.map(d => d.id === item.id ? { ...d, folderId: targetFolderId } : d))
-      await fetch(`/api/documents/${item.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderId: targetFolderId }),
-      })
-    } else {
-      const folder = folders.find(f => f.id === item.id)
-      if (folder?.parentId === targetFolderId) return
-      setFolders(prev => prev.map(f => f.id === item.id ? { ...f, parentId: targetFolderId } : f))
-      if (targetFolderId) setExpanded(prev => new Set([...prev, targetFolderId]))
-      await fetch(`/api/folders/${item.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parentId: targetFolderId }),
-      })
+    try {
+      if (item.type === 'doc') {
+        const doc = docs.find(d => d.id === item.id)
+        if (doc?.folderId === targetFolderId) return
+        setDocs(prev => prev.map(d => d.id === item.id ? { ...d, folderId: targetFolderId } : d))
+        const res = await fetch(`/api/documents/${item.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folderId: targetFolderId }),
+        })
+        if (!res.ok) throw new Error('doc')
+      } else {
+        const folder = folders.find(f => f.id === item.id)
+        if (folder?.parentId === targetFolderId) return
+        setFolders(prev => prev.map(f => f.id === item.id ? { ...f, parentId: targetFolderId } : f))
+        if (targetFolderId) setExpanded(prev => new Set([...prev, targetFolderId]))
+        const res = await fetch(`/api/folders/${item.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parentId: targetFolderId }),
+        })
+        if (!res.ok) throw new Error('folder')
+      }
+      router.refresh()
+    } catch {
+      toast.error('Failed to move item')
+      router.refresh()
     }
-    router.refresh()
   }
 
   const onDragEnd = () => {
@@ -410,9 +442,9 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
   const rootDocs = docs.filter(d => d.folderId === null)
   const isRootDrop = dragOver === 'root'
 
-  if (isCollapsed) {
+  if (isCollapsed && !mobileOpen) {
     return (
-      <div className="w-14 bg-tertiary border-r border-white/5 flex flex-col items-center h-screen relative group/collapsed">
+      <div className="hidden md:flex w-14 bg-tertiary border-r border-white/5 flex-col items-center h-screen relative group/collapsed">
         <button
           onClick={() => setIsCollapsed(false)}
           className="absolute top-1/2 -translate-y-1/2 -right-3 z-10 w-6 h-6 bg-tertiary border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-white opacity-0 group-hover/collapsed:opacity-100 transition-all"
@@ -441,7 +473,13 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
   }
 
   return (
-    <div className="w-64 bg-tertiary border-r border-white/5 flex flex-col h-screen relative group/sidebar">
+    <>
+      {/* Mobile backdrop */}
+      {mobileOpen && typeof window !== 'undefined' && createPortal(
+        <div className="md:hidden fixed inset-0 z-40 bg-black/60" onClick={closeMobile} />,
+        document.body
+      )}
+    <div className={`bg-tertiary border-r border-white/5 flex flex-col h-screen group/sidebar fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-200 md:relative md:z-auto md:w-64 md:translate-x-0 md:transition-none ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       {/* Collapse button */}
       <button
         onClick={() => setIsCollapsed(true)}
@@ -462,7 +500,7 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
             onClick={() => {
               if (!showDropdown && avatarBtnRef.current) {
                 const r = avatarBtnRef.current.getBoundingClientRect()
-                setDropdownPos({ top: r.bottom + 4, left: r.left })
+                setDropdownPos({ top: r.bottom + 4, left: Math.min(r.left, window.innerWidth - 220) })
               }
               setShowDropdown(v => !v)
             }}
@@ -581,5 +619,6 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
         onClose={() => setSearchOpen(false)}
       />
     </div>
+    </>
   )
 }
