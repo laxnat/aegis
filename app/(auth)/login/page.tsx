@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { NetworkCanvas } from '@/app/components/network-canvas'
+import { MarketingNav } from '@/app/components/marketing-nav'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
@@ -56,48 +58,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-secondary overflow-hidden flex items-center justify-center">
+    <div className="relative min-h-screen bg-secondary overflow-hidden flex items-center justify-center px-4">
 
-      {/* Diagonal slashes */}
-      {[
-        { top: '8%',  left: '-5%',  w: '40%', h: '3px', bg: 'bg-primary',   delay: 0 },
-        { top: '12%', left: '-5%',  w: '28%', h: '8px', bg: 'bg-highlight', delay: 1 },
-        { top: '17%', left: '-5%',  w: '18%', h: '3px', bg: 'bg-primary',   delay: 2 },
-        { top: '82%', right: '-5%', w: '40%', h: '3px', bg: 'bg-accent',    delay: 3 },
-        { top: '87%', right: '-5%', w: '28%', h: '8px', bg: 'bg-highlight', delay: 4 },
-        { top: '91%', right: '-5%', w: '18%', h: '3px', bg: 'bg-primary',   delay: 5 },
-      ].map((s, i) => (
-        <motion.div
-          key={i}
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 0.4, delay: s.delay * 0.08, ease: EASE }}
-          style={{
-            position: 'absolute',
-            top: s.top,
-            left: s.left,
-            right: s.right,
-            width: s.w,
-            height: s.h,
-            transform: 'rotate(-6deg)',
-            transformOrigin: s.left ? 'left center' : 'right center',
-          }}
-          className={s.bg}
-        />
-      ))}
-
-      {/* Corner accents */}
-      <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1, duration: 0.3, ease: EASE }} className="absolute top-6 left-6 w-4 h-4 bg-highlight" />
-      <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15, duration: 0.3, ease: EASE }} className="absolute bottom-6 right-6 w-4 h-4 bg-primary" />
-      <motion.div initial={{ opacity: 0, scaleY: 0 }} animate={{ opacity: 1, scaleY: 1 }} transition={{ delay: 0.2, duration: 0.6, ease: EASE }} className="absolute top-0 left-16 w-0.5 h-32 bg-primary origin-top" />
-      <motion.div initial={{ opacity: 0, scaleY: 0 }} animate={{ opacity: 1, scaleY: 1 }} transition={{ delay: 0.25, duration: 0.6, ease: EASE }} className="absolute bottom-0 right-16 w-0.5 h-32 bg-highlight origin-bottom" />
+      <MarketingNav />
+      <NetworkCanvas />
 
       {/* Form card */}
       <motion.div
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.55, ease: EASE }}
-        className="relative z-10 w-full max-w-sm bg-tertiary border border-primary/20 px-10 py-10 rounded-2xl"
+        className="relative z-10 w-full max-w-sm bg-tertiary border border-primary/20 px-6 py-8 sm:px-10 sm:py-10 rounded-2xl"
       >
         {/* Logo */}
         <Link href="/" className="block font-display text-5xl text-white hover:text-primary transition-colors text-center mb-2">
