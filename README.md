@@ -31,6 +31,7 @@ A collaborative document workspace with real-time editing, folder organisation, 
 | Rich text editor | Tiptap v3 |
 | Animations | Framer Motion |
 | Icons | Lucide React |
+| Notifications | Sonner |
 
 ---
 
@@ -87,6 +88,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Features
 
+**Documents & Editor**
 - Create, rename, and delete documents and folders
 - Nested folder support with breadcrumb navigation
 - Drag-and-drop to move documents into folders
@@ -98,3 +100,20 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Pinning for documents, folders, and shared documents
 - Global search palette (⌘K)
 - Recently viewed row on the home dashboard
+- Doc title and last-saved time shown in the nav bar while editing
+
+**Error Handling**
+- Toast notifications on all async operations (create, rename, delete, move, pin)
+- Optimistic updates with automatic revert on failure
+- Error boundaries at app and documents level with styled recovery UI
+
+**Marketing & Auth**
+- Animated network canvas background on the landing page, login, and sign up
+- Marketing nav shown on login and sign up pages
+- Changelog page tracking every release
+
+**Mobile**
+- Fully responsive layout across all pages
+- Sidebar renders as a slide-in drawer on mobile with backdrop and auto-close on navigation
+- Hamburger toggle in the nav bar on mobile
+- Responsive heading scales, padding, and wrapping controls throughout
