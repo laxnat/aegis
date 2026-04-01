@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
@@ -34,9 +35,22 @@ export function MarketingNav() {
         )}
       >
         <div className="flex items-center justify-between">
-          <Link href="/" className="font-display text-3xl text-white tracking-widest hover:text-primary transition-colors">
+          
+        <div className="flex items-center">
+          <Image
+            src="/aegis-logo-transparent.png"
+            alt="AEGIS logo"
+            width={48}
+            height={48}
+          />
+
+          <Link
+            href="/"
+            className="font-display text-3xl text-white tracking-widest hover:text-primary transition-colors"
+          >
             AEGIS
           </Link>
+        </div>
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-4">

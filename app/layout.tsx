@@ -29,6 +29,9 @@ const bebasNeue = Bebas_Neue({
 export const metadata: Metadata = {
   title: "Aegis",
   description: "Workspace personified",
+  icons: {
+    icon: "/aegis-logo-transparent.png"
+  }
 };
 
 export default function RootLayout({
