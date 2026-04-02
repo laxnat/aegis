@@ -13,6 +13,7 @@ export function MarketingNav() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
+  // Collapse the nav pill once the user scrolls past the hero
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 50)
     window.addEventListener('scroll', handler)
@@ -26,16 +27,17 @@ export function MarketingNav() {
       transition={{ duration: 0.4, ease: EASE }}
       className="fixed top-0 inset-x-0 z-50 px-4 pt-3"
     >
+      {/* Nav shrinks to a pill with a blurred bg on scroll or when the mobile menu is open */}
       <nav
         className={cn(
           'mx-auto transition-all duration-300',
-          scrolled
+          scrolled || menuOpen
             ? 'max-w-3xl bg-secondary/80 backdrop-blur-lg border border-white/8 rounded-2xl px-5 py-3'
             : 'max-w-5xl px-4 py-3'
         )}
       >
         <div className="flex items-center justify-between">
-          
+
         <div className="flex items-center">
           <Image
             src="/aegis-logo-transparent.png"
