@@ -29,6 +29,7 @@ export function DocCard({ id, title, relativeTime, pinned, onPin, onDelete, onSt
     </span>
   ) : null
 
+  // Two visual modes: compact list row or stand-alone grid card
   if (view === 'list') {
     return (
       <div className="relative group/card flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/4 transition-colors">

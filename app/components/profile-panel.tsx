@@ -15,6 +15,8 @@ type ProfilePanelProps = {
   onSaved: (profile: Profile) => void
 }
 
+// Center-crops to a square, scales to the target size, and returns a compressed
+// JPEG data URL — keeps stored avatar payloads small
 function compressImage(file: File, size = 256, quality = 0.85): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image()

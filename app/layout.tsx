@@ -4,6 +4,8 @@ import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "sonner";
 import "./globals.css";
 
+// Each font is exposed as a CSS variable and referenced in globals.css via
+// Tailwind's font-display / font-ui / font-mono utilities
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

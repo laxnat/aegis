@@ -27,6 +27,8 @@ type DocumentMenuProps = {
   onOpenChange?: (open: boolean) => void
 }
 
+// Three-mode dropdown: default actions menu, inline rename input, and status picker.
+// Portal-rendered so it escapes stacking context and overflow:hidden ancestors.
 export function DocumentMenu({ documentId, title, status, afterDelete, onStatusChange, onOpenChange }: DocumentMenuProps) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<'menu' | 'rename' | 'status'>('menu')

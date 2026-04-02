@@ -17,6 +17,8 @@ type Props = {
   view?: 'grid' | 'list'
 }
 
+// Context menu is portal-rendered to escape overflow:hidden ancestors.
+// Rename replaces the name element in-place and blocks navigation until committed.
 export function FolderCard({ id, name, docCount, relativeTime, pinned, onPin, onDelete, view = 'grid' }: Props) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)

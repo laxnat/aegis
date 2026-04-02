@@ -21,6 +21,7 @@ export default async function DocumentsLayout({
     redirect('/login')
   }
 
+  // Preload sidebar data server-side so the sidebar renders without a client fetch
   const [documents, folders] = await Promise.all([
     prisma.document.findMany({
       where: { userId: user.id },

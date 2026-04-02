@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState } from 'react'
 
+// Mobile drawer open/close state — shared between the hamburger in NavButtons
+// and the Sidebar so either can trigger it
 const SidebarContext = createContext<{
   open: boolean
   toggle: () => void

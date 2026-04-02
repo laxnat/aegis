@@ -36,6 +36,8 @@ type SidebarProps = {
   userEmail: string
 }
 
+// Prevents dropping a folder into one of its own descendants, which would create
+// a cycle in the folder tree
 function isDescendantOrSelf(folders: FolderData[], draggedId: string, targetId: string): boolean {
   if (draggedId === targetId) return true
   let current: string | null = targetId
@@ -442,6 +444,8 @@ export function Sidebar({ folders: initFolders, documents: initDocs, userEmail }
   const rootDocs = docs.filter(d => d.folderId === null)
   const isRootDrop = dragOver === 'root'
 
+  // Collapsed state renders an icon-only rail on desktop.
+  // Mobile uses CSS translate to slide the full panel in/out; the rail is hidden on mobile.
   if (isCollapsed && !mobileOpen) {
     return (
       <div className="hidden md:flex w-14 bg-tertiary border-r border-white/5 flex-col items-center h-screen relative group/collapsed">

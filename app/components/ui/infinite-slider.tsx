@@ -28,6 +28,8 @@ export function InfiniteSlider({
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [key, setKey] = useState(0)
 
+  // When hover speed changes mid-loop, animate to the current position first,
+  // then kick off a new loop at the updated speed to avoid a jump
   useEffect(() => {
     const contentSize = width + gap
     const from = reverse ? -contentSize / 2 : 0

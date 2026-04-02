@@ -9,6 +9,8 @@ export function useLoadingBar() {
   return useContext(LoadingBarContext)
 }
 
+// GitHub-style top progress bar. Animates to 80% on start, then snaps to 100%
+// and fades out on done. Exposed via context to avoid prop drilling.
 export function LoadingBarProvider({ children }: { children: React.ReactNode }) {
   const [visible, setVisible] = useState(false)
   const [width, setWidth] = useState(0)

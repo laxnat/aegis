@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+// Both the owner and anyone the doc is shared with can pin it
 async function canAccess(documentId: string, userId: string, email: string) {
   const doc = await prisma.document.findUnique({ where: { id: documentId } })
   if (!doc) return false

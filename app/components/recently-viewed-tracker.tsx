@@ -12,6 +12,8 @@ export type RecentItem = {
 export const RECENT_KEY = 'aegis_recently_viewed'
 const MAX_RECENT = 10
 
+// Renders nothing — side effect only. Prepends the current item to the
+// recently-viewed list in localStorage whenever the viewed doc/folder changes.
 export function RecentlyViewedTracker({ id, title, type }: { id: string; title: string; type: 'doc' | 'folder' }) {
   useEffect(() => {
     try {

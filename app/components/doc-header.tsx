@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState } from 'react'
 
+// Surfaces the active document's title and last-saved time into NavButtons,
+// which lives outside the document route subtree
 type DocHeaderCtx = {
   title: string | null
   lastSavedAt: Date | null

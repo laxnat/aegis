@@ -27,6 +27,8 @@ const defaultItemVariants: Variants = {
   visible: { opacity: 1 },
 }
 
+// Wraps children in a Framer Motion stagger container so each child animates in
+// sequentially rather than all at once
 export function AnimatedGroup({ children, className, variants }: AnimatedGroupProps) {
   const containerVariants = variants?.container ?? defaultContainerVariants
   const itemVariants = variants?.item ?? defaultItemVariants

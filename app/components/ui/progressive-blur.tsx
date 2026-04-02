@@ -19,6 +19,8 @@ export function ProgressiveBlur({
   const layers = Math.max(blurLayers, 2)
   const segmentSize = 1 / (layers + 1)
 
+  // Each layer is masked to a narrow horizontal band and blurred by an increasing
+  // amount — stacking them produces a smooth blur gradient toward the edge
   return (
     <div className={cn('relative pointer-events-none', className)}>
       {Array.from({ length: layers }).map((_, index) => {

@@ -11,6 +11,8 @@ export default async function DocumentsPage() {
 
   if (!user) redirect('/login')
 
+  // Fetch own folders/docs, docs shared with this user, and the user's cross-workspace
+  // pins all in parallel — the pin set is joined client-side via pinnedSharedIds
   const [folders, documents, sharedWithMe, sharedPins] = await Promise.all([
     prisma.folder.findMany({
       where: { userId: user.id, parentId: null },

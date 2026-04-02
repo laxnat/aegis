@@ -29,6 +29,7 @@ type Props = {
   onClose: () => void
 }
 
+// Ranks results: exact match > prefix match > substring match
 function score(label: string, query: string): number {
   const l = label.toLowerCase()
   const q = query.toLowerCase()

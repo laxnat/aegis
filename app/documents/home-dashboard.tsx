@@ -79,6 +79,8 @@ export function HomeDashboard({ initialFolders, initialDocs, sharedDocs }: Props
     } catch {}
   }, [])
 
+  // Folder hover panel — a 200ms close delay lets the cursor move from card to panel
+  // without it dismissing. Portal-rendered so it escapes overflow:hidden containers.
   const openPanel = (folder: FolderData, rect: DOMRect) => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
     const left = rect.right + 8 + PANEL_WIDTH > window.innerWidth
