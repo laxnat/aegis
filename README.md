@@ -2,18 +2,7 @@
 
 A collaborative document workspace with real-time editing, folder organisation, and document sharing.
 
----
-
-## Screenshots
-
-<!-- Home dashboard -->
-![Home Dashboard](screenshots/home-dashboard.png)
-
-<!-- Document editor -->
-![Document Editor](screenshots/editor.png)
-
-<!-- Share panel -->
-![Share Panel](screenshots/share-panel.png)
+**Live site:** [aegis-theta-five.vercel.app](https://aegis-theta-five.vercel.app)
 
 ---
 
